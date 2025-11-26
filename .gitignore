@@ -1,4 +1,8 @@
-.DS_Store
-Thumbs.db
-*.log
-node_modules/
+# Foundry VTT Files
+*.db
+/packs/*.db
+/packs/*.json 
+
+# Dodaj linijkę, by ignorować pliki lock i tymczasowe
+**/*.LOCK 
+**/*.tmp

@@ -1,23 +1,46 @@
 {
   "id": "warcraft-genesys",
   "title": "Warcraft Genesys Assist",
-  "description": "Moje ulepszenia QoL do sesji Warcraft.",
+  "description": "Dodatkowa karta postaci i narzędzia do Warcrafta.",
   "version": "1.0.0",
   "compatibility": {
     "minimum": "11",
     "verified": "12"
   },
-  "authors": [
+  "esmodules": ["scripts/main.js"],
+  "styles": ["styles/module.css"],
+  "packs": [
     {
-      "name": "Michal",
-      "email": "rajmundg10@gmail.com"
+      "name": "warcraft-skills",
+      "label": "Warcraft Skills",
+      "path": "packs/warcraft-skills",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "warcraft-talents",
+      "label": "Warcraft Talents",
+      "path": "packs/warcraft-talents",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "warcraft-gear",
+      "label": "Warcraft Gear",
+      "path": "packs/warcraft-gear",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
     }
   ],
-  "esmodules": [
-    "scripts/main.js"
-  ],
-  "styles": [
-    "styles/module.css"
+  "languages": [
+    {
+      "lang": "pl",
+      "name": "Polski (Warcraft)",
+      "path": "lang/pl.json"
+    }
   ],
   "url": "",
   "manifest": "",

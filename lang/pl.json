@@ -1,0 +1,102 @@
+{
+  "Genesys.System": "System Genesys",
+  
+  "Genesys.Labels.Name": "Nazwa",
+
+  "Genesys.Skills.General": "Ogólne",
+  "Genesys.Skills.Magic": "Magiczne",
+  "Genesys.Skills.Combat": "Bojowe",
+  "Genesys.Skills.Social": "Społeczne",
+  "Genesys.Skills.Knowledge": "Wiedza",
+
+  "Genesys.Labels.General": "Ogólne",
+  "Genesys.Labels.Magic": "Magiczne",
+  "Genesys.Labels.Combat": "Bojowe",
+  "Genesys.Labels.Social": "Społeczne",
+  "Genesys.Labels.Knowledge": "Wiedza",
+
+  "Genesys.General": "Ogólne",
+  "Genesys.Magic": "Magiczne",
+  "Genesys.Combat": "Bojowe",
+  "Genesys.Social": "Społeczne",
+  "Genesys.Knowledge": "Wiedza",
+  
+  
+  "Genesys.Tabs.Details": "Szczegóły",
+  "Genesys.Tabs.Duration": "Czas Trwania",
+  "Genesys.Tabs.Effects": "Efekty",
+  "Genesys.Tabs.Skills": "Umiejętności",
+  "Genesys.Tabs.Talents": "Talenty",
+  "Genesys.Tabs.Inventory": "Ekwipunek",
+  "Genesys.Tabs.Combat": "Walka",
+  "Genesys.Tabs.Notes": "Notatki",
+  "Genesys.Tabs.Settings": "Ustawienia",
+
+  "Genesys.Characteristics.Brawn": "Krzepa",
+  "Genesys.Characteristics.Agility": "Zręczność",
+  "Genesys.Characteristics.Intellect": "Intelekt",
+  "Genesys.Characteristics.Cunning": "Spryt",
+  "Genesys.Characteristics.Willpower": "Wola",
+  "Genesys.Characteristics.Presence": "Prezencja",
+
+  "Genesys.Labels.SoakValue": "Redukcja",
+  "Genesys.Labels.Defense": "Obrona",
+  "Genesys.Labels.DefenseMelee": "Obrona (Zwarcie)",
+  "Genesys.Labels.DefenseRanged": "Obrona (Dystans)",
+  "Genesys.Labels.Wounds": "Rany",
+  "Genesys.Labels.Strain": "Stres",
+  "Genesys.Labels.WoundThreshold": "Próg Ran",
+  "Genesys.Labels.StrainThreshold": "Próg Stresu",
+  "Genesys.Labels.Current":"Obecne",
+  "Genesys.Labels.Threshold":"Próg",
+  
+  "Genesys.Labels.Silhouette": "Sylwetka",
+  "Genesys.Labels.Speed": "Szybkość",
+  "Genesys.Labels.Handling": "Prowadzenie",
+  "Genesys.Labels.Armor": "Pancerz",
+  "Genesys.Labels.HullTraumaThreshold": "Próg Uszkodzeń Kadłuba",
+  "Genesys.Labels.SystemStrainThreshold": "Próg Obciążeń Systemowych",
+  "Genesys.Labels.Passengers": "Pasażerowie",
+  "Genesys.Labels.PassengerCapacity": "Pojemność Pasażerska",
+
+  "Genesys.Labels.Encumbrance": "Obciążenie",
+  "Genesys.Labels.EncumbranceThreshold": "Próg Obciążenia",
+  
+  "Genesys.Labels.Damage": "Obrażenia",
+  "Genesys.Labels.Critical": "Krytyk",
+  "Genesys.Labels.Range": "Zasięg",
+  "Genesys.Labels.Skill": "Umiejętność",
+  "Genesys.Labels.Dice": "Pula Kości",
+
+  "Genesys.ActiveEffects.ChangeKey": "Klucz Zmiany",
+  "Genesys.ActiveEffects.ChangeMode": "Tryb",
+  "Genesys.ActiveEffects.ChangeValue": "Wartość",
+  "Genesys.ActiveEffects.Types.ModifyCharacteristic": "Modyfikacja Cechy",
+  "Genesys.ActiveEffects.Types.ModifyStat": "Modyfikacja Statystyki",
+  "Genesys.ActiveEffects.Types.ModifyDicePool.GroupLabel": "Modyfikacja Puli Kości",
+  "Genesys.ActiveEffects.Types.ModifyDicePool.Options.Check": "Test (Check)",
+  "Genesys.ActiveEffects.Types.ModifyDicePool.Options.Characteristic": "Cecha",
+  "Genesys.ActiveEffects.Types.ModifyDicePool.Options.Skill": "Umiejętność",
+
+  "EFFECT.IconTint": "Zabarwienie Ikony",
+  "EFFECT.Disabled": "Wyłączony",
+  "EFFECT.Origin": "Źródło",
+  "EFFECT.Transfer": "Transferuj do postaci",
+  "EFFECT.DurationSecs": "Czas (sekundy)",
+  "EFFECT.StartTime": "Czas Startu",
+  "EFFECT.DurationTurns": "Czas (Tury)",
+  "EFFECT.Combat": "Walka",
+  "EFFECT.StartTurns": "Start (Tura)",
+
+  "COMBAT.Rounds": "Rundy",
+  "COMBAT.Turns": "Tury",
+  "COMBAT.Round": "Runda",
+  "COMBAT.Turn": "Tura",
+
+  "Genesys.SkillCategory.General": "Ogólne",
+  "Genesys.SkillCategory.Magic": "Magiczne",
+  "Genesys.SkillCategory.Combat": "Bojowe",
+  "Genesys.SkillCategory.Social": "Społeczne",
+  "Genesys.SkillCategory.Knowledge": "Wiedza"
+
+}
