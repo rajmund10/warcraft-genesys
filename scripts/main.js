@@ -1,41 +1,5 @@
-import { swapSkills } from "./skills-logic.js";
 import { SpecializationSheet } from "./specialization-sheet.js";
 import { TalentTreeManager } from "./tree-manager.js";
-
-// SŁOWNIK TŁUMACZEŃ (Wklejony z powrotem tutaj dla bezpieczeństwa)
-const HARD_TRANSLATIONS = {
-    // Kategorie umiejętności
-    "General Skills": "Um. Ogólne",
-    "Magic Skills": "Um. Magiczne",
-    "Combat Skills": "Um. Bojowe",
-    "Social Skills": "Um. Społeczne",
-    "Knowledge Skills": "Wiedza",
-    
-    // Skróty Cech
-    "Br": "Krz",
-    "Ag": "Zr",
-    "Will": "Wola",
-    "Cun": "Spr",
-    "Pr": "Pre",
-    
-    // Nagłówki
-    "Rank": "Ranga",
-    "Career": "Kariera",
-    "Dice Pool": "Pula Kości",
-    "Total XP": "Suma XP",
-    "Available XP": "Obecne XP",
-    
-    // Inne
-    "Soak": "Redukcja",
-    "Wounds": "Rany",
-    "Strain": "Zmęczenie",
-    "Defense": "Obrona",
-    "Encumbrance": "Obciążenie",
-
-    // Dodatkowe
-    "Experience": "Doświadczenie",
-    "Character Name": "Nazwa Postaci"
-};
 
 Hooks.once('ready', () => {
     console.log("WARCRAFT MOD | Start systemu...");
@@ -54,38 +18,36 @@ Hooks.once('ready', () => {
                     return options;
                 }
 
-                _getHeaderButtons() {
-                    const buttons = super._getHeaderButtons();
-                    buttons.unshift({
-                        label: "Warcraft Setup",
-                        class: "warcraft-setup-btn",
-                        icon: "fas fa-dungeon",
-                        onclick: () => swapSkills(this.actor)
-                    });
-                    return buttons;
-                }
-
+                // GŁÓWNA PĘTLA RYSOWANIA
                 async _render(force, options) {
                     await super._render(force, options);
+                    
+                    // Uruchamiamy dodatki tylko w trybie Warcraft
                     if (this.element.hasClass('warcraft-mode')) {
-                        this._translateNow();
+                        
+                        // Wstrzykujemy zakładkę Specjalizacji
                         const treeManager = new TalentTreeManager(this, this.element);
                         treeManager.injectTab();
+
+                        // Uruchamiamy strażnika (tylko raz), żeby pilnował zakładki przy przełączaniu widoków
                         if (!this._observer) this._activateObserver();
                     }
                 }
 
+                // STRAŻNIK ZMIAN (Pilnuje, żeby zakładka nie zniknęła)
                 _activateObserver() {
                     const targetNode = this.element.find('.sheet-body')[0]; 
                     if (!targetNode) return;
+                    
                     const callback = (mutationsList, observer) => {
-                        if (this._translationTimeout) clearTimeout(this._translationTimeout);
-                        this._translationTimeout = setTimeout(() => {
-                            this._translateNow();
+                        if (this._refreshTimeout) clearTimeout(this._refreshTimeout);
+                        
+                        this._refreshTimeout = setTimeout(() => {
                             const treeManager = new TalentTreeManager(this, this.element);
                             treeManager.injectTab();
                         }, 50);
                     };
+
                     this._observer = new MutationObserver(callback);
                     this._observer.observe(targetNode, { childList: true, subtree: true });
                 }
@@ -96,16 +58,6 @@ Hooks.once('ready', () => {
                         this._observer = null;
                     }
                     return super.close(options);
-                }
-
-                _translateNow() {
-                    const html = this.element[0];
-                    const walk = document.createTreeWalker(html, NodeFilter.SHOW_TEXT, null, false);
-                    let node;
-                    while (node = walk.nextNode()) {
-                        const text = node.nodeValue.trim();
-                        if (text && HARD_TRANSLATIONS[text]) node.nodeValue = HARD_TRANSLATIONS[text];
-                    }
                 }
             }
 
@@ -118,7 +70,6 @@ Hooks.once('ready', () => {
     }
 
     // 2. REJESTRACJA ARKUSZA DLA TYPU 'SPECIALIZATION'
-    // (Zakładamy, że dodałeś już typ w template.json)
     Items.registerSheet("genesys", SpecializationSheet, {
         types: ["specialization"], 
         makeDefault: true, 

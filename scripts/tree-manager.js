@@ -21,7 +21,7 @@ export class TalentTreeManager {
             container.append(`
                 <div class="specialization-header">
                     <h3>${this.document.name}</h3>
-                    <p>Szablon Specjalizacji (Edytor)</p>
+                    <p>${game.i18n.localize("Warcraft.Editor")}</p>
                 </div>
             `);
             
@@ -35,7 +35,7 @@ export class TalentTreeManager {
 
     injectTab() {
         if (this.html.find('.item[data-tab="talent-tree"]').length === 0) {
-            const navItem = $('<a class="item" data-tab="talent-tree"><i class="fas fa-sitemap"></i> Drzewko</a>');
+            const navItem = $(`<a class="item" data-tab="talent-tree"><i class="fas fa-sitemap"></i> ${game.i18n.localize("Warcraft.SpecTree")}</a>`);
             this.html.find('nav.sheet-tabs').append(navItem);
         }
 
@@ -46,28 +46,41 @@ export class TalentTreeManager {
         }
     }
 
+    _calculateXP() {
+        const entries = this.document.system.experienceJournal?.entries || [];
+        let total = 0;
+        for (let entry of entries) {
+            total += (Number(entry.amount) || 0);
+        }
+        return total;
+    }
+
     renderTree(container) {
         const lockIcon = this.isLocked ? "fa-lock" : "fa-lock-open";
         const lockClass = this.isLocked ? "" : "unlocked";
-        const lockTitle = this.isLocked ? "Zablokowane (Tryb Gry)" : "Tryb Edycji";
+        const lockTitle = this.isLocked ? game.i18n.localize("Warcraft.Locked") : game.i18n.localize("Warcraft.EditMode");
+        
+        const xpLabel = game.i18n.localize("Genesys.Labels.AvailableXP") || "Dostępne PD";
         
         let controls = "";
         if (!this.isItem) {
-            // --- POPRAWKA 1: BEZPIECZNE POBIERANIE XP ---
-            // Używamy ?. (optional chaining) i || 0 (fallback)
-            const currentXP = this.document.system.experience?.available || 0;
+            const currentXP = this._calculateXP();
+            const instruction = game.i18n.localize("Warcraft.InstructionActor");
             
             controls = `
             <div class="tree-controls">
                 <button class="lock-btn ${lockClass}" title="${lockTitle}">
                     <i class="fas ${lockIcon}"></i>
                 </button>
-                <span class="xp-display">Dostępne XP: <strong>${currentXP}</strong></span>
+                <span class="xp-display" style="margin-left: 15px; font-family: 'Cinzel'; font-weight: bold; color: #4a3b28;">
+                    ${xpLabel}: <span style="color: #2e7d32;">${currentXP}</span>
+                </span>
                 <span style="flex:1"></span>
-                <small style="color:#555">LPM: Kup / PPM: Edycja</small>
+                <small style="color:#555">${instruction}</small>
             </div>`;
         } else {
-            controls = `<div class="tree-controls" style="text-align:center; color:#777"><small>Edytor Szablonu</small></div>`;
+            const instruction = game.i18n.localize("Warcraft.InstructionItem");
+            controls = `<div class="tree-controls" style="text-align:center; color:#777"><small>${instruction}</small></div>`;
         }
 
         let html = `${controls}<div class="tree-grid">`;
@@ -86,10 +99,14 @@ export class TalentTreeManager {
                         availableClass = "dimmed";
                     }
 
-                    const activationLabel = node.activation ? `Aktywacja: ${node.activation}` : "";
+                    let positionClass = "pos-center"; 
+                    if (c === 0) positionClass = "pos-left"; 
+                    else if (c === 3) positionClass = "pos-right";
+
+                    const activationLabel = node.activation ? `${game.i18n.localize("Genesys.Labels.Activation")}: ${node.activation}` : "";
 
                     html += `
-                        <div class="tree-node ${purchasedClass} ${availableClass}" data-key="${key}" data-cost="${cost}">
+                        <div class="tree-node ${purchasedClass} ${availableClass} ${positionClass}" data-key="${key}" data-cost="${cost}">
                             <img src="${node.img}">
                             <div class="node-name">${node.name}</div>
                             <div class="node-cost">${cost} XP</div>
@@ -131,29 +148,24 @@ export class TalentTreeManager {
 
     checkAccessibility(row, col) {
         if (row === 0) return true;
-
         const upConnKey = `v-${row-1}-${col}`;
         const upNodeKey = `${row-1}-${col}`;
         if (this.treeData.connections[upConnKey] && this.treeData.nodes[upNodeKey]?.purchased) return true;
-
         if (col > 0) {
             const leftConnKey = `h-${row}-${col-1}`;
             const leftNodeKey = `${row}-${col-1}`;
             if (this.treeData.connections[leftConnKey] && this.treeData.nodes[leftNodeKey]?.purchased) return true;
         }
-
         if (col < 3) {
             const rightConnKey = `h-${row}-${col}`; 
             const rightNodeKey = `${row}-${col+1}`;
             if (this.treeData.connections[rightConnKey] && this.treeData.nodes[rightNodeKey]?.purchased) return true;
         }
-
         if (row < 4) {
             const downConnKey = `v-${row}-${col}`;
             const downNodeKey = `${row+1}-${col}`;
             if (this.treeData.connections[downConnKey] && this.treeData.nodes[downNodeKey]?.purchased) return true;
         }
-
         return false;
     }
 
@@ -175,12 +187,20 @@ export class TalentTreeManager {
                 const specTreeData = item.getFlag("warcraft-genesys", "treeData");
                 
                 if (specTreeData && item.type === "specialization") {
+                    const hasExistingTree = Object.keys(this.treeData.nodes).length > 0;
+                    const dialogTitle = hasExistingTree ? game.i18n.localize("Warcraft.OverwritePrompt") : game.i18n.localize("Warcraft.ImportPrompt");
+                    const warning = game.i18n.localize("Warcraft.OverwriteWarning");
+
+                    const dialogContent = hasExistingTree ? 
+                        `<p>${dialogTitle}</p><p style="color:#d32f2f; font-size: 12px;">${warning}</p>` :
+                        `<p>${dialogTitle} <strong>${item.name}</strong>?</p>`;
+
                     new Dialog({
-                        title: "Aktywować Specjalizację?",
-                        content: `<p>Czy wgrać drzewko: <strong>${item.name}</strong>?</p>`,
+                        title: dialogTitle,
+                        content: dialogContent,
                         buttons: {
                             yes: {
-                                label: "Wczytaj",
+                                label: hasExistingTree ? "Nadpisz" : "Wczytaj",
                                 callback: async () => {
                                     const cleanNodes = {};
                                     for (const [k, v] of Object.entries(specTreeData.nodes)) {
@@ -189,10 +209,12 @@ export class TalentTreeManager {
                                     this.treeData = { nodes: cleanNodes, connections: specTreeData.connections || {} };
                                     await this.saveData();
                                     this.refresh();
+                                    ui.notifications.info(`Wczytano specjalizację: ${item.name}`);
                                 }
                             },
                             no: { label: "Anuluj" }
-                        }
+                        },
+                        default: "yes"
                     }).render(true);
                 }
             });
@@ -202,19 +224,16 @@ export class TalentTreeManager {
             if (!this.isItem && this.isLocked) return;
             ev.preventDefault();
             ev.stopPropagation(); 
-
             const data = JSON.parse(ev.originalEvent.dataTransfer.getData("text/plain"));
             if (data.type !== "Item") return;
             const item = await Item.fromDropData(data);
             if (item.type !== "talent") return;
-
             const key = $(ev.currentTarget).data('key');
             let activationText = "Pasywna";
             if (item.system.activation?.type) {
                 activationText = item.system.activation.type;
                 if (item.system.activation.detail) activationText += ` (${item.system.activation.detail})`;
             }
-
             this.treeData.nodes[key] = {
                 name: item.name,
                 img: item.img,
@@ -231,10 +250,8 @@ export class TalentTreeManager {
             const key = $(ev.currentTarget).data('key');
             const cost = $(ev.currentTarget).data('cost');
             const node = this.treeData.nodes[key];
-            
             if (!node) return;
             if (this.isItem) return; 
-
             if (node.purchased) {
                 this.refundTalent(key, node, cost);
             } else {
@@ -264,97 +281,140 @@ export class TalentTreeManager {
 
     async purchaseTalent(key, node, cost) {
         const [r, c] = key.split('-').map(Number);
+        
         if (!this.checkAccessibility(r, c)) {
-            ui.notifications.warn("Musisz najpierw kupić połączony talent z niższego rzędu!");
+            ui.notifications.warn(game.i18n.localize("Warcraft.PathRequirement"));
             return;
         }
 
-        // --- POPRAWKA 2: BEZPIECZNE POBIERANIE XP ---
-        const currentXP = this.document.system.experience?.available || 0;
-        
+        const currentXP = this._calculateXP();
         if (currentXP < cost) {
-            ui.notifications.error(`Nie masz wystarczająco XP! Koszt: ${cost}, Masz: ${currentXP}`);
+            ui.notifications.error(game.i18n.localize("Warcraft.NotEnoughXP"));
             return;
         }
 
         new Dialog({
-            title: "Zakup Talentu",
-            content: `<p>Czy chcesz kupić talent <strong>${node.name}</strong> za <strong>${cost} XP</strong>?</p>`,
+            title: game.i18n.localize("Warcraft.BuyTitle"),
+            content: `<p>${game.i18n.format("Warcraft.BuyConfirm", {name: node.name, cost: cost})}</p>`,
             buttons: {
                 yes: {
-                    label: "Kupuję",
+                    label: game.i18n.localize("Genesys.Labels.Yes"),
                     icon: '<i class="fas fa-check"></i>',
                     callback: async () => {
-                        // Aktualizacja XP
-                        await this.document.update({
-                            "system.experience.available": currentXP - cost
-                        });
+                        try {
+                            // ZAPIS W DZIENNIKU (POLSKI)
+                            const entries = this.document.system.experienceJournal?.entries || [];
+                            const newEntry = {
+                                amount: -cost,
+                                type: "Spent", 
+                                data: { 
+                                    name: game.i18n.format("Warcraft.JournalPurchase", {name: node.name}) 
+                                }
+                            };
+                            
+                            await this.document.update({
+                                "system.experienceJournal.entries": [...entries, newEntry]
+                            });
 
-                        const itemData = {
-                            name: node.name,
-                            type: "talent",
-                            img: node.img,
-                            system: {
-                                description: node.description,
-                                activation: { type: node.activation.split('(')[0].trim(), detail: "" },
-                                ranked: false, 
-                                tier: r + 1 
-                            }
-                        };
-                        
-                        const newItem = await this.document.createEmbeddedDocuments("Item", [itemData]);
-                        
-                        node.purchased = true;
-                        node.realItemId = newItem[0].id; 
-                        
-                        await this.saveData();
-                        this.refresh();
-                        
-                        AudioHelper.play({src: "sounds/coins.wav", volume: 0.5}, false);
-                        ui.notifications.info(`Kupiono talent: ${node.name}`);
+                            const itemData = {
+                                name: node.name,
+                                type: "talent",
+                                img: node.img,
+                                system: {
+                                    description: node.description,
+                                    activation: { 
+                                        type: node.activation.toLowerCase().includes("active") ? "active" : "passive", 
+                                        detail: node.activation.replace(/passive|active/gi, "").replace(/[()]/g, "").trim() 
+                                    },
+                                    ranked: "no",
+                                    tier: r + 1 
+                                }
+                            };
+                            
+                            const newItems = await this.document.createEmbeddedDocuments("Item", [itemData]);
+                            const newItem = newItems[0]; 
+
+                            node.purchased = true;
+                            node.realItemId = newItem.id; 
+                            
+                            await this.saveData();
+                            this.refresh();
+                            
+                            AudioHelper.play({src: "sounds/coins.wav", volume: 0.5}, false);
+                            ui.notifications.info(game.i18n.format("Warcraft.JournalPurchase", {name: node.name}));
+
+                        } catch (err) {
+                            console.error(err);
+                        }
                     }
                 },
-                no: { label: "Anuluj" }
+                no: { label: game.i18n.localize("Genesys.Labels.No") }
             }
         }).render(true);
     }
 
     async refundTalent(key, node, cost) {
+        // 1. Szukamy paragonu (wpisu w dzienniku)
+        const entries = this.document.system.experienceJournal?.entries || [];
+        let receiptIndex = -1;
+        
+        // Szukamy nazwy talentu w dzienniku
+        for (let i = entries.length - 1; i >= 0; i--) {
+            const e = entries[i];
+            // Sprawdzamy czy nazwa wpisu zawiera nazwę talentu (np. "Zakup talentu: Atak")
+            if (e.amount === -cost && e.data?.name && e.data.name.includes(node.name)) {
+                receiptIndex = i;
+                break;
+            }
+        }
+
+        const dialogTitle = game.i18n.localize("Warcraft.RefundTitle");
+        let dialogContent;
+        
+        if (receiptIndex > -1) {
+            dialogContent = `<p>${game.i18n.format("Warcraft.RefundConfirm", {name: node.name, cost: cost})}</p>`;
+        } else {
+            dialogContent = `<p style="color:#d32f2f"><strong>UWAGA:</strong> Nie znaleziono wpisu w dzienniku! (Brak zwrotu PD)</p>`;
+        }
+
         new Dialog({
-            title: "Zwrot Talentu",
-            content: `<p>Czy chcesz cofnąć talent <strong>${node.name}</strong> i odzyskać <strong>${cost} XP</strong>?</p>
-                      <p style="font-size:12px; color:#777">Talent zostanie usunięty z Twojej karty.</p>`,
+            title: dialogTitle,
+            content: dialogContent + `<p style="font-size:12px; color:#777; margin-top:5px">${game.i18n.localize("Warcraft.RefundWarning")}</p>`,
             buttons: {
                 yes: {
-                    label: "Zwróć",
+                    label: receiptIndex > -1 ? "Zwrot" : "Usuń",
                     icon: '<i class="fas fa-undo"></i>',
                     callback: async () => {
-                        // --- POPRAWKA 3: BEZPIECZNE POBIERANIE XP ---
-                        const currentXP = this.document.system.experience?.available || 0;
-                        
-                        await this.document.update({
-                            "system.experience.available": currentXP + cost
-                        });
-
-                        if (node.realItemId) {
-                            const existingItem = this.document.items.get(node.realItemId);
-                            if (existingItem) {
-                                await existingItem.delete();
+                        try {
+                            if (receiptIndex > -1) {
+                                const newEntries = [...entries];
+                                newEntries.splice(receiptIndex, 1); // Usuwamy wpis zakupu
+                                await this.document.update({
+                                    "system.experienceJournal.entries": newEntries
+                                });
                             }
-                        } else {
-                            const existingItem = this.document.items.find(i => i.name === node.name && i.type === "talent");
-                            if (existingItem) await existingItem.delete();
+
+                            if (node.realItemId) {
+                                const existingItem = this.document.items.get(node.realItemId);
+                                if (existingItem) await existingItem.delete();
+                            } else {
+                                const existingItem = this.document.items.find(i => i.name === node.name && i.type === "talent");
+                                if (existingItem) await existingItem.delete();
+                            }
+
+                            node.purchased = false;
+                            node.realItemId = null;
+
+                            await this.saveData();
+                            this.refresh();
+                            ui.notifications.info(game.i18n.format("Warcraft.JournalRefund", {name: node.name}));
+
+                        } catch (err) {
+                            console.error(err);
                         }
-
-                        node.purchased = false;
-                        node.realItemId = null;
-
-                        await this.saveData();
-                        this.refresh();
-                        ui.notifications.info(`Zwrócono talent: ${node.name}`);
                     }
                 },
-                no: { label: "Anuluj" }
+                no: { label: game.i18n.localize("Genesys.Labels.No") }
             }
         }).render(true);
     }
@@ -366,7 +426,6 @@ export class TalentTreeManager {
     refresh() {
         const container = this.html.find('.tab.talent-tree');
         const target = this.isItem ? this.html.find('.window-content .talent-tree') : container;
-        
         if (target.length) {
             target.empty(); 
             this.renderTree(target);

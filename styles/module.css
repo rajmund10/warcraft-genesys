@@ -1,218 +1,309 @@
-/* Stylizacja tylko dla naszej karty (dzięki klasie .warcraft-mode) */
+/* --- 1. IMPORT CZCIONEK --- */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Roboto+Slab:wght@400;700&display=swap');
 
-/* Brązowy nagłówek a la Warcraft */
+/* --- 2. ZMIENNE KOLORYSTYCZNE --- */
+:root {
+    --wow-gold: #f8b700;
+    --wow-gold-dark: #cda300;
+    --wow-brown-dark: #291d14;
+    --wow-parchment: #f0e6d2;
+    --wow-parchment-dark: #e6dcc5;
+    --wow-border: #5c452d;
+    --wow-text: #2e2418;
+}
+
+/* --- 3. STYLIZACJA OKNA (WARCRAFT MODE) --- */
 .warcraft-mode .window-header {
-    background: #382618;
-    color: #fbd638;
-    border-bottom: 2px solid #fbd638;
+    background: var(--wow-brown-dark);
+    color: var(--wow-gold);
+    border-bottom: 2px solid var(--wow-gold-dark);
+    
+    /* Typografia */
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px; /* Zmniejszony odstęp między literami */
+    font-size: 13px;       /* <--- ZMNIEJSZONO (Domyślnie jest duże) */
+    
+    /* Wymiary */
+    height: 32px;          /* Bardziej kompaktowy pasek */
+    align-items: center;   /* Wyśrodkowanie pionowe */
+    padding: 0 5px;
 }
 
-/* Przykładowa zmiana czcionki nagłówków na oknie */
-.warcraft-mode h1, .warcraft-mode h2, .warcraft-mode h3 {
-    text-shadow: 1px 1px 2px black;
+/* Tytuł okna (Imię postaci/przedmiotu) */
+.warcraft-mode .window-title {
+    text-shadow: 0 0 5px #000;
+    font-size: 14px;       /* Imię nieco większe i wyraźniejsze */
+    font-weight: 900;
+    flex: 1;               /* Rozpycha się, dopychając przyciski do prawej */
 }
 
-/* --- ZAKŁADKA DRZEWKA TALENTÓW --- */
+/* Przyciski w nagłówku (Setup, Sheet, Close) */
+.warcraft-mode .window-header .header-button {
+    font-size: 10px;       /* <--- Przyciski znacznie mniejsze */
+    margin-right: 3px;     /* Mniejsze odstępy */
+    line-height: 24px;     /* Wyrównanie do ikonek */
+}
 
-/* Kontener całej zakładki */
+/* Ikony w przyciskach (np. X, zębatka) */
+.warcraft-mode .window-header .header-button i {
+    margin-right: 3px;
+    font-size: 11px;
+}
+
+/* --- 4. SIATKA DRZEWKA --- */
 .tab.talent-tree {
     height: 100%;
     overflow-y: auto;
     padding: 10px;
-    background: #f0f0f0; /* Jasne tło jak na obrazku */
+    background: var(--wow-parchment-dark);
+    /* Opcjonalnie: Tło z lekką teksturą */
+    background-image: radial-gradient(circle, var(--wow-parchment) 10%, var(--wow-parchment-dark) 90%);
 }
 
-/* Główna siatka: 4 kolumny talentów + 3 kolumny przerw na linie */
 .tree-grid {
     display: grid;
     /* Slot, Linia, Slot, Linia, Slot, Linia, Slot */
     grid-template-columns: 140px 30px 140px 30px 140px 30px 140px;
-    /* To samo dla rzędów */
     grid-template-rows: repeat(5, 160px 30px); 
     justify-content: center;
 }
 
-/* --- POJEDYNCZY SLOT TALENTU (Karta) --- */
+/* --- 5. SLOTY TALENTÓW (NOWA LOGIKA) --- */
+
+/* Baza dla każdego slotu */
 .tree-node {
-    background: white;
-    border: 2px solid #333;
-    border-radius: 8px;
-    padding: 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
     position: relative;
+    padding: 5px;
+    border-radius: 4px;
     font-size: 11px;
     text-align: center;
     transition: all 0.2s;
+    
+    /* KLUCZOWE DLA DYMKÓW: */
+    overflow: visible !important; 
+    z-index: 1;
 }
 
-/* Kiedy talent jest kupiony */
+/* --- WYGLĄD 1: ZAPEŁNIONY TALENT (Karta) --- */
+.tree-node:not(.empty):not(.locked-empty) {
+    background: #e8dac0; /* Pergamin */
+    border: 2px solid var(--wow-border);
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+
+/* Hover na talent */
+.tree-node:not(.empty):not(.locked-empty):hover {
+    z-index: 1000; /* Wyciągnij na wierzch */
+    border-color: var(--wow-gold-dark);
+    transform: translateY(-2px);
+}
+
+/* --- WYGLĄD 2: PUSTY SLOT (Placeholder) --- */
+.tree-node.empty, 
+.tree-node.locked-empty {
+    background: rgba(0, 0, 0, 0.03);
+    border: 2px dashed rgba(92, 69, 45, 0.3); /* Przerywana linia */
+    box-shadow: none;
+    color: rgba(92, 69, 45, 0.5);
+    justify-content: center;
+}
+
+.tree-node.empty:hover {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: var(--wow-gold);
+    border-style: solid;
+}
+
+/* --- STAN: KUPIONY --- */
 .tree-node.purchased {
-    background: #dfffd6; /* Zielonkawy */
-    border-color: #2e7d32;
-    box-shadow: 0 0 10px #2e7d32;
+    background: #2a2016 !important; /* Ciemne tło */
+    border: 2px solid var(--wow-gold) !important;
+    box-shadow: 0 0 10px var(--wow-gold);
 }
 
+.tree-node.purchased .node-name {
+    color: var(--wow-gold);
+    text-shadow: 0 0 2px #000;
+}
+
+/* --- STAN: NIEDOSTĘPNY --- */
+.tree-node.dimmed {
+    filter: grayscale(100%) brightness(0.7);
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+/* --- DETALE WEWNĄTRZ TALENTU --- */
 .tree-node img {
-    width: 48px;
-    height: 48px;
-    border: none;
-    margin-bottom: 5px;
+    width: 42px;
+    height: 42px;
+    border: 1px solid #555;
+    margin-bottom: 4px;
+    background: #000;
 }
 
 .tree-node .node-name {
+    font-family: 'Cinzel', serif;
     font-weight: bold;
-    font-size: 12px;
-    margin-bottom: 2px;
+    color: var(--wow-brown-dark);
+    line-height: 1.1;
 }
 
 .tree-node .node-cost {
-    position: absolute;
-    bottom: -10px;
     background: #333;
-    color: white;
-    padding: 2px 8px;
+    color: #fff;
+    padding: 1px 6px;
     border-radius: 10px;
-    font-size: 10px;
+    font-size: 9px;
+    margin-top: auto;
+    border: 1px solid #777;
 }
 
-/* Pusty slot (drop zone) */
-.tree-node.empty {
-    border: 2px dashed #ccc;
-    background: rgba(0,0,0,0.02);
-    justify-content: center;
-    color: #aaa;
-}
-
-/* --- LINIE ŁĄCZĄCE (CONNECTOR) --- */
+/* --- 6. LINIE ŁĄCZĄCE --- */
 .connector {
-    background: #ccc; /* Domyślnie nieaktywna linia (szara) */
+    background: rgba(92, 69, 45, 0.3); /* Jasna linia */
     cursor: pointer;
     transition: background 0.2s;
 }
 
-/* Aktywna linia (czarna) */
 .connector.active {
-    background: #333;
+    background: var(--wow-brown-dark); /* Ciemna aktywna linia */
+    box-shadow: 0 0 2px rgba(0,0,0,0.5);
 }
 
-/* Pozioma linia */
-.connector.h {
-    height: 6px;
-    align-self: center;
-    width: 100%;
-}
+.connector.h { height: 6px; align-self: center; width: 100%; }
+.connector.v { width: 6px; justify-self: center; height: 100%; }
 
-/* Pionowa linia */
-.connector.v {
-    width: 6px;
-    justify-self: center;
-    height: 100%;
-}
-
-/* --- PRZYCISK KŁÓDKI --- */
+/* --- 7. KONTROLKI I KŁÓDKA --- */
 .tree-controls {
-    text-align: right;
-    margin-bottom: 10px;
-    padding-right: 20px;
-    border-bottom: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid var(--wow-border);
     padding-bottom: 5px;
+    margin-bottom: 15px;
+    font-family: 'Cinzel', serif;
 }
 
 .lock-btn {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 18px;
-    color: #555;
+    font-size: 16px;
+    color: var(--wow-border);
     transition: color 0.2s;
 }
+.lock-btn:hover { color: var(--wow-text); }
+.lock-btn.unlocked { color: #d32f2f; }
 
-.lock-btn:hover {
-    color: #000;
-    text-shadow: 0 0 5px rgba(0,0,0,0.2);
-}
-
-.lock-btn.unlocked {
-    color: #d32f2f; /* Czerwona kłódka otwarta - uwaga, edycja! */
-}
-
-/* --- TOOLTIP (OPIS TALENTU) --- */
-.tree-node .tooltip {
-    visibility: hidden;
-    width: 250px;
-    background-color: #333;
-    color: #fff;
-    text-align: left;
-    border-radius: 6px;
-    padding: 10px;
-    position: absolute;
-    z-index: 100;
-    bottom: 110%; /* Wyświetl nad talentem */
-    left: 50%;
-    margin-left: -125px; /* Wyśrodkowanie */
-    
-    /* Efekt pojawiania */
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none; /* Żeby myszka nie "haczyła" o tooltip */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+/* Przycisk eksportu */
+.export-btn {
+    background: none;
+    border: 1px solid var(--wow-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    color: var(--wow-text);
+    margin-left: 10px;
     font-size: 12px;
-    line-height: 1.4;
+    padding: 2px 8px;
+    transition: all 0.2s;
 }
-
-/* Strzałeczka w dół od dymka */
-.tree-node .tooltip::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #333 transparent transparent transparent;
-}
-
-/* Pokaż tooltip po najechaniu */
-.tree-node:hover .tooltip {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* Stylizacja treści w dymku */
-.tooltip strong {
-    color: #ffcc00; /* Złoty nagłówek */
-    display: block;
-    margin-bottom: 4px;
-    border-bottom: 1px solid #555;
-    padding-bottom: 2px;
-}
-
-.tooltip .activation-tag {
-    font-style: italic;
-    color: #aaa;
-    margin-bottom: 5px;
-    font-size: 11px;
+.export-btn:hover {
+    background: var(--wow-brown-dark);
+    color: var(--wow-gold);
 }
 
 .specialization-header {
     text-align: center;
-    padding: 10px;
     margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.5);
-    border-bottom: 1px solid var(--wow-border);
-    font-family: 'Roboto Slab', serif;
-    font-size: 13px;
+    padding: 10px;
+    background: rgba(0,0,0,0.05);
+    border-bottom: 2px solid var(--wow-gold);
 }
-/* Talent niedostępny (brak połączenia) */
-.tree-node.dimmed {
-    opacity: 0.5;
-    filter: grayscale(100%);
-    cursor: not-allowed;
+.specialization-header h3 {
+    font-family: 'Cinzel', serif;
+    margin: 0;
+    font-size: 20px;
+    color: var(--wow-brown-dark);
 }
 
-.tree-node.dimmed:hover {
-    /* Tooltip nadal działa, ale nie wygląda na klikalny */
-    border-color: #555; 
+/* --- 8. TOOLTIPY (NAPRAWIONE) --- */
+.tree-node .tooltip {
+    visibility: hidden;
+    opacity: 0;
+    
+    background: rgba(15, 15, 20, 0.98);
+    border: 1px solid #777;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    border-radius: 4px;
+    padding: 12px;
+    text-align: left;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    
+    width: 280px;
+    min-height: 50px;
+    
+    /* Pozycjonowanie bazowe (Środek-Dół) */
+    position: absolute;
+    top: 100%; 
+    margin-top: 10px; 
+    left: 50%;
+    transform: translateX(-50%);
+    
+    z-index: 9999;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+/* Strzałeczka */
+.tree-node .tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 100%; 
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent rgba(15, 15, 20, 0.98) transparent;
+}
+
+.tree-node:hover .tooltip { visibility: visible; opacity: 1; }
+
+/* Inteligentne pozycjonowanie (Lewo/Prawo) */
+.tree-node.pos-left .tooltip {
+    left: 0;
+    transform: none;
+}
+.tree-node.pos-left .tooltip::after { left: 24px; }
+
+.tree-node.pos-right .tooltip {
+    left: auto;
+    right: 0;
+    transform: none;
+}
+.tree-node.pos-right .tooltip::after { left: auto; right: 24px; }
+
+/* Treść Tooltipa */
+.tooltip strong {
+    display: block;
+    color: var(--wow-gold);
+    font-size: 14px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+.tooltip .activation-tag {
+    color: #4caf50;
+    font-style: italic;
+    margin-bottom: 8px;
+    font-size: 11px;
 }
