@@ -1,0 +1,372 @@
+<form class="char-creator-content" autocomplete="off">
+    
+    <aside class="creator-sidebar">
+        <div class="sidebar-header">
+            <h2>Kreator</h2>
+        </div>
+        <ul class="steps-list">
+            <li class="step {{#if isStep1}}active{{/if}}">1. Pochodzenie</li>
+            <li class="step {{#if isStep2}}active{{/if}}">2. Profesja</li>
+            <li class="step {{#if isStep3}}active{{/if}}">3. Specjalizacja</li>
+            <li class="step {{#if isStep4}}active{{/if}}">4. Doświadczenie</li>
+            <li class="step {{#if isStep5}}active{{/if}}">5. Detale</li>
+        </ul>
+        
+        <div class="xp-budget">
+            <label>Dostępne PD</label>
+            <div class="xp-val {{#if (lt availableXP 0)}}negative{{/if}}">{{availableXP}}</div>
+        </div>
+    </aside>
+
+    <main class="creator-body">
+
+{{#if isStep1}}
+        <div class="step-container">
+            <h3>Wybierz Pochodzenie</h3>
+            
+            <div class="dropdown-container">
+                <label>Dostępne Rasy:</label>
+                <select class="species-dropdown">
+                    <option value="" disabled {{#unless state.speciesId}}selected{{/unless}}>-- Wybierz rasę z listy --</option>
+                    {{#each races as |r|}}
+                    <option value="{{r.id}}" {{#if (eq ../state.speciesId r.id)}}selected{{/if}}>{{r.name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+
+            <hr style="border: 0; border-bottom: 1px solid var(--wow-brown-light); margin: 15px 0;">
+
+            <div class="selection-details full-width">
+                {{#if currentSpecies}}
+                    <div class="species-header">
+                        <h4>{{currentSpecies.name}}</h4>
+                    </div>
+
+                    <div class="species-flex-container">
+                        <div class="species-portrait-col">
+                            <img src="{{raceImage}}" alt="{{currentSpecies.name}}">
+                        </div>
+
+                        <div class="species-content-col">
+                            <div class="characteristics-row">
+                                <div class="char-box"><div class="char-label">Budowa</div><div class="char-value">{{currentSpecies.system.characteristics.brawn}}</div></div>
+                                <div class="char-box"><div class="char-label">Zwinność</div><div class="char-value">{{currentSpecies.system.characteristics.agility}}</div></div>
+                                <div class="char-box"><div class="char-label">Intelekt</div><div class="char-value">{{currentSpecies.system.characteristics.intellect}}</div></div>
+                                <div class="char-box"><div class="char-label">Spryt</div><div class="char-value">{{currentSpecies.system.characteristics.cunning}}</div></div>
+                                <div class="char-box"><div class="char-label">Siła Woli</div><div class="char-value">{{currentSpecies.system.characteristics.willpower}}</div></div>
+                                <div class="char-box"><div class="char-label">Ogłada</div><div class="char-value">{{currentSpecies.system.characteristics.presence}}</div></div>
+                            </div>
+
+                            <div class="derived-row">
+                                <div class="derived-box"><label>Rany</label><div class="val">{{currentSpecies.system.woundThreshold}} + Bud</div></div>
+                                <div class="derived-box"><label>Stres</label><div class="val">{{currentSpecies.system.strainThreshold}} + SW</div></div>
+                                <div class="derived-box xp"><label>Początkowe PD</label><div class="val">{{currentSpecies.system.startingXP}}</div></div>
+                            </div>
+
+                            {{#if racialAbilities.length}}
+                                <div class="desc-header" style="margin-top: 15px;">Zdolności Rasowe</div>
+                                <div class="racial-abilities-list" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
+                                    {{#each racialAbilities}}
+                                    <div class="racial-ability-box" style="
+                                        background: rgba(255, 255, 255, 0.1); 
+                                        border: 1px solid #8b7e6a; 
+                                        border-left: 3px solid var(--wow-gold);
+                                        padding: 8px; 
+                                        border-radius: 3px;">
+                                        
+                                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                            <img src="{{img}}" style="width:24px; height:24px; border:1px solid #555; border-radius:3px;">
+                                            <strong style="font-family:'Cinzel'; color:#2e2418; font-size:13px;">{{name}}</strong>
+                                        </div>
+                                        <div style="font-size:11px; opacity:0.9; line-height:1.4;">
+                                            {{{description}}}
+                                        </div>
+                                    </div>
+                                    {{/each}}
+                                </div>
+                            {{/if}}
+
+                            <div class="desc-header">Opis Rasy</div>
+                            <div class="desc-box custom-scroll">
+                                {{{enrichedRaceDescription}}}
+                            </div>
+                        </div>
+                    </div>
+                {{else}}
+                    <div class="placeholder-msg">
+                        <i class="fas fa-hand-point-up"></i> Wybierz rasę z listy powyżej.
+                    </div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+
+        {{#if isStep2}}
+        <div class="step-container">
+            <h3>Wybierz Profesję</h3>
+            
+            <div class="dropdown-container">
+                <label>Dostępne Profesje:</label>
+                <select class="career-dropdown species-dropdown"> <option value="" disabled {{#unless state.careerId}}selected{{/unless}}>-- Wybierz profesję --</option>
+                    {{#each careers as |c|}}
+                    <option value="{{c.id}}" {{#if (eq ../state.careerId c.id)}}selected{{/if}}>{{c.name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+
+            <hr style="border: 0; border-bottom: 1px solid var(--wow-brown-light); margin: 15px 0;">
+
+            <div class="selection-details full-width">
+                {{#if currentCareer}}
+                    <div class="species-header">
+                        <h4>{{currentCareer.name}}</h4>
+                    </div>
+
+                    <div class="species-flex-container">
+                        
+                        <div class="species-portrait-col">
+                            <img src="{{careerImage}}" alt="{{currentCareer.name}}">
+                        </div>
+
+                        <div class="species-content-col">
+                            
+                            <div class="skills-selection-box">
+                                <div class="skills-header">Umiejętności Klasowe (Wybierz 4):</div>
+                                {{#if careerSkillOptions.length}}
+                                    <ul class="skills-list-grid">
+                                        {{#each careerSkillOptions}}
+                                        <li>
+                                            <label class="{{#if (includes ../state.careerSkills this)}}active{{/if}}">
+                                                <input type="checkbox" class="skill-check" value="{{this}}" 
+                                                {{#if (includes ../state.careerSkills this)}}checked{{/if}}
+                                                {{#if (and (gte ../state.careerSkills.length 4) (not (includes ../state.careerSkills this)))}}disabled{{/if}}>
+                                                {{this}}
+                                            </label>
+                                        </li>
+                                        {{/each}}
+                                    </ul>
+                                    <div class="skills-counter">Wybrano: <strong>{{state.careerSkills.length}} / 4</strong></div>
+                                {{else}}
+                                    <p style="color:red">Błąd: Brak zdefiniowanych umiejętności w tej profesji.</p>
+                                {{/if}}
+                            </div>
+
+                            <div class="desc-header">Opis Profesji</div>
+                            <div class="desc-box custom-scroll">
+                                {{{enrichedCareerDescription}}}
+                            </div>
+                        </div>
+                    </div>
+                {{else}}
+                    <div class="placeholder-msg">
+                        <i class="fas fa-hand-point-up"></i> Wybierz profesję z listy powyżej.
+                    </div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+        
+        {{#if isStep3}}
+        <div class="step-container">
+            <h3>Wybierz Specjalizację</h3>
+            
+            <div class="dropdown-container">
+                <label>Dostępne Specjalizacje:</label>
+                <select class="spec-dropdown species-dropdown"> 
+                    <option value="" disabled {{#unless state.specId}}selected{{/unless}}>-- Wybierz specjalizację --</option>
+                    {{#each specializations as |s|}}
+                    <option value="{{s.id}}" {{#if (eq ../state.specId s.id)}}selected{{/if}}>{{s.name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+
+            <hr style="border: 0; border-bottom: 1px solid var(--wow-brown-light); margin: 15px 0;">
+
+            <div class="selection-details full-width">
+                {{#if currentSpec}}
+                    <div class="species-header">
+                        <h4>{{currentSpec.name}}</h4>
+                    </div>
+
+                    <div class="species-flex-container">
+                        
+                        <div class="species-portrait-col" style="
+                            background-image: url('{{specBg}}'); 
+                            background-position: {{specPos}}; 
+                            background-size: cover; 
+                            background-repeat: no-repeat; 
+                            border: 3px solid var(--wow-gold);">
+                        </div>
+
+                        <div class="species-content-col">
+                            <div class="desc-header">Opis Specjalizacji</div>
+                            <div class="desc-box custom-scroll">
+                                {{{enrichedSpecDescription}}}
+                            </div>
+                        </div>
+                    </div>
+                {{else}}
+                    <div class="placeholder-msg">
+                        <i class="fas fa-hand-point-up"></i> Wybierz specjalizację z listy powyżej.
+                    </div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+
+{{#if isStep4}}
+        <div class="step-container" style="height: 100%; display: flex; flex-direction: column;">
+            
+            <div style="padding: 5px; background: rgba(0,0,0,0.05); border-bottom: 1px solid #ccc; font-weight: bold; font-family: 'Cinzel'; color: var(--wow-brown-dark); margin-bottom: 10px; flex: 0 0 auto;">
+                Rozwój Postaci: {{currentSpec.name}}
+            </div>
+
+            <div class="step-4-layout">
+                
+                <div class="xp-sidebar custom-scroll">
+                    
+                    {{#if (gt state.freeNonCareerMax 0)}}
+                    <div class="xp-budget" style="margin-bottom: 15px; border: 1px solid #4caf50; background: rgba(76, 175, 80, 0.15); padding: 5px;">
+                        <label style="color: #81c784; font-size: 11px;">Darmowe Nieklasowe (Tylko 1. ranga)</label>
+                        <div class="xp-val" style="color: #fff; font-size: 16px;">
+                            {{state.freeNonCareerUsed}} / {{state.freeNonCareerMax}}
+                        </div>
+                    </div>
+                    {{/if}}
+
+                    {{#if (gt state.freeCombatMax 0)}}
+                    <div class="xp-budget" style="margin-bottom: 15px; border: 1px solid #d32f2f; background: rgba(211, 47, 47, 0.15); padding: 5px;">
+                        <label style="color: #e57373; font-size: 11px;">Darmowa Walka (1. ranga)</label>
+                        <div class="xp-val" style="color: #fff; font-size: 16px;">
+                            {{state.freeCombatUsed}} / {{state.freeCombatMax}}
+                        </div>
+                    </div>
+                    {{/if}}
+                    
+                    <div class="cat-header">CECHY</div>
+                    <div class="attr-mini-grid">
+                        {{#each attributeList}}
+                        <div class="attr-mini-box">
+                            <div class="attr-mini-label">{{label}}</div>
+                            <div class="attr-mini-controls">
+                                <span class="attr-val">{{value}}</span>
+                                <div style="display:flex; flex-direction:column; gap:1px;">
+                                    {{#if canBuy}}
+                                    <i class="fas fa-caret-up attr-buy" data-key="{{key}}" title="Koszt: {{cost}} PD" style="color:green; cursor:pointer; font-size:12px; line-height:10px;"></i>
+                                    {{/if}}
+                                    {{#if canRefund}}
+                                    <i class="fas fa-caret-down attr-refund" data-key="{{key}}" title="Zwrot" style="color:red; cursor:pointer; font-size:12px; line-height:10px;"></i>
+                                    {{/if}}
+                                </div>
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+
+                    {{#each categorizedSkills as |cat|}}
+                    <div class="cat-header" style="margin-top: 10px;">{{cat.label}}</div>
+                    <table class="compact-table" style="width:100%; font-size:11px; border-collapse: collapse;">
+                        {{#each cat.skills}}
+                        <tr>
+                            <td style="text-align:left;">
+                                {{label}} 
+                                {{#if isCareer}}<i class="fas fa-star" style="color:goldenrod; font-size:9px;" title="Klasowa"></i>{{/if}}
+                            </td>
+                            <td style="text-align:center; width:20px; font-weight:bold;">{{rank}}</td>
+                            <td style="text-align:right; width:40px;">
+                                {{#if canBuy}}
+                                    <i class="fas fa-plus-circle skill-buy" data-key="{{key}}" title="Koszt: {{cost}} PD" style="color:green; cursor:pointer;"></i>
+                                {{/if}}
+                                {{#if (gt rank 0)}}
+                                    <i class="fas fa-minus-circle skill-refund" data-key="{{key}}" style="color:red; cursor:pointer; margin-left:3px;"></i>
+                                {{/if}}
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </table>
+                    {{/each}}
+
+                </div> 
+                
+                <div class="tree-container-wrapper">
+                    <div id="active-tree-canvas" style="width:100%; height:100%; overflow:auto;"></div>
+                </div>
+
+            </div> 
+        </div> 
+{{/if}}
+
+        {{#if isStep5}}
+        <div class="step-container">
+            <h3>Detale</h3>
+            
+            <div class="details-section">
+                <label>Imię Postaci</label>
+                <input type="text" name="charName" value="{{state.charName}}" style="font-size: 1.2em; font-weight: bold;">
+            </div>
+
+            <h3 style="margin-top: 15px;">Motywacje</h3>
+            <div class="motivations-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                
+                <div class="mot-box">
+                    <header style="display: flex; justify-content: space-between;">
+                        <label>Zaleta (Strength)</label>
+                        <a class="mot-roll" data-type="strength" data-table="Motywacja: Zaleta"><i class="fas fa-dice"></i> Losuj</a>
+                    </header>
+                    <input type="text" class="mot-input" data-type="strength" data-field="name" value="{{state.motivations.strength.name}}" placeholder="Nazwa">
+                    <textarea class="mot-input" data-type="strength" data-field="description" placeholder="Opis">{{state.motivations.strength.description}}</textarea>
+                </div>
+
+                <div class="mot-box">
+                    <header style="display: flex; justify-content: space-between;">
+                        <label>Wada (Flaw)</label>
+                        <a class="mot-roll" data-type="flaw" data-table="Motywacja: Wada"><i class="fas fa-dice"></i> Losuj</a>
+                    </header>
+                    <input type="text" class="mot-input" data-type="flaw" data-field="name" value="{{state.motivations.flaw.name}}" placeholder="Nazwa">
+                    <textarea class="mot-input" data-type="flaw" data-field="description" placeholder="Opis">{{state.motivations.flaw.description}}</textarea>
+                </div>
+
+                <div class="mot-box">
+                    <header style="display: flex; justify-content: space-between;">
+                        <label>Pragnienie (Desire)</label>
+                        <a class="mot-roll" data-type="desire" data-table="Motywacja: Pragnienie"><i class="fas fa-dice"></i> Losuj</a>
+                    </header>
+                    <input type="text" class="mot-input" data-type="desire" data-field="name" value="{{state.motivations.desire.name}}" placeholder="Nazwa">
+                    <textarea class="mot-input" data-type="desire" data-field="description" placeholder="Opis">{{state.motivations.desire.description}}</textarea>
+                </div>
+
+                <div class="mot-box">
+                    <header style="display: flex; justify-content: space-between;">
+                        <label>Lęk (Fear)</label>
+                        <a class="mot-roll" data-type="fear" data-table="Motywacja: Lęk"><i class="fas fa-dice"></i> Losuj</a>
+                    </header>
+                    <input type="text" class="mot-input" data-type="fear" data-field="name" value="{{state.motivations.fear.name}}" placeholder="Nazwa">
+                    <textarea class="mot-input" data-type="fear" data-field="description" placeholder="Opis">{{state.motivations.fear.description}}</textarea>
+                </div>
+
+            </div>
+
+            <div class="selection-details" style="margin-top: 15px; border-top: 2px solid #ccc; padding-top: 10px;">
+                <p><strong>Podsumowanie:</strong></p>
+                <p>Rany: {{derived.wounds}} | Stres: {{derived.strain}} | Wyp: {{derived.soak}}</p>
+                <p>Pozostałe PD: {{availableXP}}</p>
+            </div>
+        </div>
+        {{/if}}
+
+    </main>
+
+    <footer class="creator-footer">
+        {{#if (gt state.step 1)}}
+        <button type="button" class="nav-btn" data-action="prev"><i class="fas fa-arrow-left"></i> Wstecz</button>
+        {{else}}
+        <div></div>
+        {{/if}}
+
+        {{#if (lt state.step 5)}}
+        <button type="button" class="nav-btn primary" data-action="next">Dalej <i class="fas fa-arrow-right"></i></button>
+        {{else}}
+        <button type="button" class="nav-btn finish-btn"><i class="fas fa-check"></i> Stwórz Postać</button>
+        {{/if}}
+    </footer>
+</form>

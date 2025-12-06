@@ -3,7 +3,7 @@ import { TalentTreeManager } from "./tree-manager.js";
 export class SpecializationSheet extends ItemSheet {
     
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             // ID musi być unikalne
             id: "warcraft-genesys.SpecializationSheet", 
             classes: ["genesys", "sheet", "item", "specialization-sheet"],

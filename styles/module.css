@@ -1,309 +1,1324 @@
-/* --- 1. IMPORT CZCIONEK --- */
+/* ==========================================================================
+   WARCRAFT GENESYS - CLEAN CORE (Bez ingerencji w układ karty)
+   ========================================================================== */
+
+/* --- 1. ZMIENNE I CZCIONKI --- */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Roboto+Slab:wght@400;700&display=swap');
 
-/* --- 2. ZMIENNE KOLORYSTYCZNE --- */
 :root {
     --wow-gold: #f8b700;
     --wow-gold-dark: #cda300;
-    --wow-brown-dark: #291d14;
-    --wow-parchment: #f0e6d2;
-    --wow-parchment-dark: #e6dcc5;
-    --wow-border: #5c452d;
+    --wow-brown-dark: #15100c;
+    --wow-brown-mid: #211510;
+    --wow-brown-light: #5c452d;
+    --wow-parchment: #f3eac8;
+    --wow-parchment-dark: #e0d2a8;
     --wow-text: #2e2418;
+    --wow-red: #5c1818;
+
+    /* Kolory Drzewka */
+    --path-purchased: #f8b700;
+    --path-available: #2e7d32;
+    --path-locked: #4a3b2a;
 }
 
-/* --- 3. STYLIZACJA OKNA (WARCRAFT MODE) --- */
+/* --- 2. GŁÓWNE OKNO (RAMKA I TŁO) --- */
+
+/* Stylizacja ramki okna (zewnętrzna) */
+.window-app.warcraft-mode {
+    font-family: 'Roboto Slab', serif !important;
+    background: var(--wow-brown-dark) !important;
+    border: 2px solid var(--wow-brown-light) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8) !important;
+    color: var(--wow-text) !important;
+}
+
+/* Pasek tytułowy okna */
 .warcraft-mode .window-header {
-    background: var(--wow-brown-dark);
-    color: var(--wow-gold);
-    border-bottom: 2px solid var(--wow-gold-dark);
-    
-    /* Typografia */
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px; /* Zmniejszony odstęp między literami */
-    font-size: 13px;       /* <--- ZMNIEJSZONO (Domyślnie jest duże) */
-    
-    /* Wymiary */
-    height: 32px;          /* Bardziej kompaktowy pasek */
-    align-items: center;   /* Wyśrodkowanie pionowe */
-    padding: 0 5px;
+    background: var(--wow-brown-dark) !important;
+    color: var(--wow-gold) !important;
+    border-bottom: 2px solid var(--wow-gold-dark) !important;
+    font-family: 'Cinzel', serif !important;
+    text-transform: uppercase !important;
+    flex: 0 0 auto !important;
 }
 
-/* Tytuł okna (Imię postaci/przedmiotu) */
 .warcraft-mode .window-title {
-    text-shadow: 0 0 5px #000;
-    font-size: 14px;       /* Imię nieco większe i wyraźniejsze */
-    font-weight: 900;
-    flex: 1;               /* Rozpycha się, dopychając przyciski do prawej */
+    font-weight: 900 !important;
+    text-shadow: 0 0 5px #000 !important;
 }
 
-/* Przyciski w nagłówku (Setup, Sheet, Close) */
-.warcraft-mode .window-header .header-button {
-    font-size: 10px;       /* <--- Przyciski znacznie mniejsze */
-    margin-right: 3px;     /* Mniejsze odstępy */
-    line-height: 24px;     /* Wyrównanie do ikonek */
+/* --- WNĘTRZE OKNA (FIX PODWÓJNEGO PASKA) --- */
+
+/* Wspólne style tła i czcionki dla kontenerów */
+.genesys.sheet.actor.warcraft-mode .window-content,
+.genesys.sheet.actor.warcraft-mode .vue-app {
+    background-color: var(--wow-parchment) !important;
+    background-image: radial-gradient(#dcd0b3 1px, transparent 1px) !important;
+    background-size: 20px 20px !important;
+    font-family: 'Roboto Slab', serif !important;
+    color: var(--wow-text) !important;
 }
 
-/* Ikony w przyciskach (np. X, zębatka) */
-.warcraft-mode .window-header .header-button i {
-    margin-right: 3px;
-    font-size: 11px;
+/* 1. GŁÓWNY KONTENER - Tu chcemy pasek przewijania */
+.genesys.sheet.actor.warcraft-mode .window-content {
+    padding: 5px !important;
+    
+    /* ZMIANA: auto zamiast scroll - pasek pojawi się tylko gdy jest potrzebny */
+    overflow-y: auto !important; 
+    overflow-x: hidden !important;
+    display: block !important; 
+    
+    /* Dodatek: Ładniejszy pasek przewijania dla Webkit (Chrome/Foundry) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--wow-gold) var(--wow-brown-dark);
 }
 
-/* --- 4. SIATKA DRZEWKA --- */
-.tab.talent-tree {
-    height: 100%;
-    overflow-y: auto;
-    padding: 10px;
-    background: var(--wow-parchment-dark);
-    /* Opcjonalnie: Tło z lekką teksturą */
-    background-image: radial-gradient(circle, var(--wow-parchment) 10%, var(--wow-parchment-dark) 90%);
+/* 2. WEWNĘTRZNY KONTENER (Vue) - Tu wyłączamy pasek */
+.genesys.sheet.actor.warcraft-mode .vue-app {
+    /* Wyłączamy scrollowanie wewnątrz, żeby nie było dubla */
+    overflow: visible !important; 
+    height: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-.tree-grid {
-    display: grid;
-    /* Slot, Linia, Slot, Linia, Slot, Linia, Slot */
-    grid-template-columns: 140px 30px 140px 30px 140px 30px 140px;
-    grid-template-rows: repeat(5, 160px 30px); 
-    justify-content: center;
+/* --- 3. NAWIGACJA (SOLIDNA - NAPRAWIONA) --- */
+
+/* Pasek zakładek */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs {
+    background-color: var(--wow-brown-dark) !important;
+    background-image: none !important;
+    border-top: 2px solid var(--wow-gold) !important;
+    border-bottom: 2px solid var(--wow-gold) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    
+    /* Flexbox - zapobiega rozjeżdżaniu */
+    display: flex !important;
+    flex-wrap: nowrap !important;
 }
 
-/* --- 5. SLOTY TALENTÓW (NOWA LOGIKA) --- */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .spacer {
+    display: none !important;
+}
 
-/* Baza dla każdego slotu */
-.tree-node {
+/* Pojedyncza zakładka */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .item {
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    
+    color: #aaa !important;
+    font-family: 'Cinzel', serif !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    
+    padding: 10px 2px !important;
+    margin: 0 !important;
+    
+    /* Równe rozłożenie */
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+}
+
+/* Ikona w zakładce */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .item i {
+    margin-right: 5px !important;
+    display: inline-block !important;
+}
+
+/* Separator pionowy */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .item:not(:last-child)::after {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 20% !important;
+    height: 60% !important;
+    width: 1px !important;
+    background: rgba(248, 183, 0, 0.2) !important;
+}
+
+/* Aktywna zakładka */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .active {
+    background-color: #5c1818 !important;
+    color: var(--wow-gold) !important;
+    font-weight: bold !important;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5) !important;
+    
+    border: 1px solid var(--wow-gold) !important;
+    border-bottom: none !important;
+    border-top: none !important;
+    
+    margin-top: -2px !important;
+    margin-bottom: -2px !important;
+    z-index: 5 !important;
+}
+
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .active::after { display: none !important; }
+
+/* Złota belka pod aktywną */
+.genesys.sheet.actor.warcraft-mode nav.sheet-tabs .active::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 3px !important;
+    background: var(--wow-gold) !important;
+}
+
+/* --- KREATOR POSTACI (Layout GRID) --- */
+
+.char-creator-content { 
+    display: grid; 
+    /* Siatka: Kolumna boczna 220px | Reszta dla treści */
+    grid-template-columns: 220px 1fr; 
+    /* Wiersze: Treść (automatycznie) | Stopka 60px na sztywno */
+    grid-template-rows: 1fr 60px;
+    grid-template-areas: 
+        "sidebar body"
+        "sidebar footer";
+    
+    height: 100%; 
+    background: var(--wow-parchment); 
+    color: var(--wow-text); 
+    overflow: hidden; /* Ważne: ukrywa paski przewijania głównego okna */
+}
+
+/* Pasek boczny (Lewy) */
+.creator-sidebar { 
+    grid-area: sidebar;
+    background: var(--wow-brown-dark); 
+    color: #fff; 
+    padding: 10px; 
+    border-right: 3px solid var(--wow-gold); 
     display: flex;
     flex-direction: column;
-    align-items: center;
+    overflow-y: auto; /* Pasek przewijania tylko tutaj */
+}
+
+/* Główna treść (Prawy) */
+.creator-body { 
+    grid-area: body;
+    padding: 20px; 
+    overflow-y: auto; /* Pasek przewijania tylko dla treści! */
     position: relative;
+}
+
+/* Stopka (Prawy dół) */
+.creator-footer { 
+    grid-area: footer;
+    background: var(--wow-parchment-dark); 
+    border-top: 1px solid #ccc; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0 20px;
+    z-index: 10;
+}
+
+/* Reszta styli przycisków i nagłówków */
+.sidebar-header h2 { font-family: 'Cinzel', serif; color: var(--wow-gold); text-align: center; border-bottom: 1px solid var(--wow-gold-dark); margin: 0 0 10px 0; }
+.steps-list { list-style: none; padding: 0; margin: 0; }
+.steps-list .step { padding: 8px; font-family: 'Cinzel', serif; color: #888; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.steps-list .step.active { color: var(--wow-gold); font-weight: bold; background: rgba(255,255,255,0.1); border-left: 3px solid var(--wow-gold); }
+.xp-budget { background: rgba(0,0,0,0.3); padding: 10px; border: 1px solid var(--wow-brown-light); text-align: center; margin-top: auto; }
+.xp-budget label { display: block; font-size: 0.8em; opacity: 0.8; }
+.xp-budget .xp-val { font-size: 24px; font-weight: bold; color: var(--wow-gold); font-family: 'Cinzel', serif; }
+.xp-budget .xp-val.negative { color: #ff4444; }
+
+.step-container h3 { font-family: 'Cinzel', serif; color: var(--wow-brown-dark); border-bottom: 2px solid var(--wow-brown-light); margin-top: 0; }
+
+.nav-btn { background: var(--wow-brown-dark); color: var(--wow-gold); border: 1px solid var(--wow-gold); padding: 8px 20px; font-family: 'Cinzel', serif; cursor: pointer; }
+.nav-btn:hover { background: #000; color: #fff; }
+.nav-btn.primary { background: var(--wow-gold-dark); color: #fff; border-color: #fff; }
+/* --- 5. DRZEWKO TALENTÓW (Wersja z Headerem i Footerem) --- */
+
+.tab.talent-tree { height: 100%; overflow-y: auto; padding: 0; }
+
+.tree-grid { 
+    background-color: #1a1410;
+    border: 4px solid var(--wow-brown-light);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+    border-radius: 8px;
+    
+    padding: 60px 20px 50px 20px; 
+    
+    display: grid;
+    /* Kolumny bez zmian */
+    grid-template-columns: 140px 30px 140px 30px 140px 30px 140px;
+    
+    /* ZMIANA: Mniejsze rzędy (było 160px 30px -> jest 125px 25px) */
+    /* To "ściśnie" drzewko w pionie, usuwając nadmiar brązowego tła */
+    grid-template-rows: repeat(5, 125px 25px); 
+    
+    justify-content: center;
+    position: relative; 
+    overflow: hidden; 
+    
+    /* ZMIANA: Mniejsza minimalna wysokość */
+    min-height: 400px; 
+    margin-top: 10px; /* Odstęp od opisu */
+}
+
+/* Styl dla nowego pola opisu w edytorze */
+.spec-description-editor {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--wow-brown-light);
     padding: 5px;
     border-radius: 4px;
-    font-size: 11px;
-    text-align: center;
-    transition: all 0.2s;
-    
-    /* KLUCZOWE DLA DYMKÓW: */
-    overflow: visible !important; 
-    z-index: 1;
-}
-
-/* --- WYGLĄD 1: ZAPEŁNIONY TALENT (Karta) --- */
-.tree-node:not(.empty):not(.locked-empty) {
-    background: #e8dac0; /* Pergamin */
-    border: 2px solid var(--wow-border);
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-    cursor: pointer;
-}
-
-/* Hover na talent */
-.tree-node:not(.empty):not(.locked-empty):hover {
-    z-index: 1000; /* Wyciągnij na wierzch */
-    border-color: var(--wow-gold-dark);
-    transform: translateY(-2px);
-}
-
-/* --- WYGLĄD 2: PUSTY SLOT (Placeholder) --- */
-.tree-node.empty, 
-.tree-node.locked-empty {
-    background: rgba(0, 0, 0, 0.03);
-    border: 2px dashed rgba(92, 69, 45, 0.3); /* Przerywana linia */
-    box-shadow: none;
-    color: rgba(92, 69, 45, 0.5);
-    justify-content: center;
-}
-
-.tree-node.empty:hover {
-    background: rgba(0, 0, 0, 0.08);
-    border-color: var(--wow-gold);
-    border-style: solid;
-}
-
-/* --- STAN: KUPIONY --- */
-.tree-node.purchased {
-    background: #2a2016 !important; /* Ciemne tło */
-    border: 2px solid var(--wow-gold) !important;
-    box-shadow: 0 0 10px var(--wow-gold);
-}
-
-.tree-node.purchased .node-name {
-    color: var(--wow-gold);
-    text-shadow: 0 0 2px #000;
-}
-
-/* --- STAN: NIEDOSTĘPNY --- */
-.tree-node.dimmed {
-    filter: grayscale(100%) brightness(0.7);
-    opacity: 0.8;
-    cursor: not-allowed;
-}
-
-/* --- DETALE WEWNĄTRZ TALENTU --- */
-.tree-node img {
-    width: 42px;
-    height: 42px;
-    border: 1px solid #555;
-    margin-bottom: 4px;
-    background: #000;
-}
-
-.tree-node .node-name {
-    font-family: 'Cinzel', serif;
-    font-weight: bold;
-    color: var(--wow-brown-dark);
-    line-height: 1.1;
-}
-
-.tree-node .node-cost {
-    background: #333;
-    color: #fff;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-size: 9px;
-    margin-top: auto;
-    border: 1px solid #777;
-}
-
-/* --- 6. LINIE ŁĄCZĄCE --- */
-.connector {
-    background: rgba(92, 69, 45, 0.3); /* Jasna linia */
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.connector.active {
-    background: var(--wow-brown-dark); /* Ciemna aktywna linia */
-    box-shadow: 0 0 2px rgba(0,0,0,0.5);
-}
-
-.connector.h { height: 6px; align-self: center; width: 100%; }
-.connector.v { width: 6px; justify-self: center; height: 100%; }
-
-/* --- 7. KONTROLKI I KŁÓDKA --- */
-.tree-controls {
-    display: flex;
-    align-items: center;
-    border-bottom: 2px solid var(--wow-border);
-    padding-bottom: 5px;
-    margin-bottom: 15px;
-    font-family: 'Cinzel', serif;
-}
-
-.lock-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: var(--wow-border);
-    transition: color 0.2s;
-}
-.lock-btn:hover { color: var(--wow-text); }
-.lock-btn.unlocked { color: #d32f2f; }
-
-/* Przycisk eksportu */
-.export-btn {
-    background: none;
-    border: 1px solid var(--wow-border);
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: 'Cinzel', serif;
-    color: var(--wow-text);
-    margin-left: 10px;
-    font-size: 12px;
-    padding: 2px 8px;
-    transition: all 0.2s;
-}
-.export-btn:hover {
-    background: var(--wow-brown-dark);
-    color: var(--wow-gold);
-}
-
-.specialization-header {
-    text-align: center;
+    min-height: 150px;
     margin-bottom: 10px;
-    padding: 10px;
-    background: rgba(0,0,0,0.05);
-    border-bottom: 2px solid var(--wow-gold);
-}
-.specialization-header h3 {
-    font-family: 'Cinzel', serif;
-    margin: 0;
-    font-size: 20px;
-    color: var(--wow-brown-dark);
 }
 
-/* --- 8. TOOLTIPY (NAPRAWIONE) --- */
-.tree-node .tooltip {
-    visibility: hidden;
-    opacity: 0;
-    
-    background: rgba(15, 15, 20, 0.98);
-    border: 1px solid #777;
-    color: #fff;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.8);
-    border-radius: 4px;
-    padding: 12px;
-    text-align: left;
-    font-family: 'Roboto', sans-serif;
-    font-size: 12px;
-    line-height: 1.4;
-    
-    width: 280px;
-    min-height: 50px;
-    
-    /* Pozycjonowanie bazowe (Środek-Dół) */
+.spec-description-editor .editor-content {
+    min-height: 130px;
+    font-family: 'Roboto Slab', serif;
+    color: #1a1410;
+    padding: 5px;
+}
+
+/* GÓRNY PASEK (XP + Nazwa) */
+.tree-header {
     position: absolute;
-    top: 100%; 
-    margin-top: 10px; 
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
     
-    z-index: 9999;
-    pointer-events: none;
+    /* Gradient od góry */
+    background: linear-gradient(180deg, rgba(21, 16, 12, 0.95) 0%, rgba(21, 16, 12, 0.6) 80%, transparent 100%);
+    border-bottom: none;
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 10;
+    
+    color: #fff;
+    font-family: 'Cinzel', serif;
+}
+
+.xp-display {
+    font-size: 16px;
+    text-shadow: 0 2px 4px black;
+    background: rgba(0,0,0,0.4);
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+.xp-val {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-left: 5px;
+}
+
+.spec-name-display {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--wow-gold);
+    text-shadow: 0 0 10px rgba(248, 183, 0, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* DOLNY PASEK (Kłódka / Edytor tła) */
+.tree-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    
+    /* Gradient od dołu */
+    background: linear-gradient(0deg, rgba(21, 16, 12, 0.95) 0%, rgba(21, 16, 12, 0.6) 80%, transparent 100%);
+    
+    display: flex;
+    justify-content: flex-end; /* Wyrównanie do prawej */
+    align-items: center;
+    padding: 0 20px;
+    z-index: 10;
+}
+
+/* Style przycisków */
+.tree-footer button, .tree-header button {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #555;
+    color: #ccc;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-family: 'Roboto Slab', serif;
+    font-size: 12px;
+}
+.tree-footer button:hover, .tree-header button:hover {
+    color: var(--wow-gold);
+    border-color: var(--wow-gold);
+    background: rgba(0,0,0,0.9);
+}
+.tree-footer button.unlocked {
+    color: var(--wow-gold);
+    border-color: var(--wow-gold);
+    box-shadow: 0 0 5px var(--wow-gold-dark);
+}
+
+/* Reszta styli węzłów (bez zmian) */
+/* --- STYLIZACJA WĘZŁÓW (TALENTÓW I SLOTÓW) --- */
+
+/* --- STYLIZACJA WĘZŁÓW --- */
+
+.tree-node {
+    padding: 5px; 
+    border-radius: 4px; 
+    font-size: 11px; 
+    text-align: center; 
+    transition: all 0.2s; 
+    z-index: 2; 
+    position: relative;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+}
+
+/* 1. DOSTĘPNY (Nie kupiony, ale możliwy) - TU BYŁ PROBLEM */
+.tree-node.available {
+    background: #e8dac0; /* Jasny pergamin */
+    
+    /* Wyraźna, ciemna ramka */
+    border: 3px solid #2e2418 !important; 
+    
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0,0,0,0.8);
+    color: #000;
+}
+
+/* Hover na dostępnym - zachęta do kupna */
+.tree-node.available:hover {
+    border-color: #2e7d32 !important; /* Zielona ramka */
+    box-shadow: 0 0 15px #2e7d32 !important; /* Zielona poświata */
+    transform: scale(1.05);
+}
+
+/* 2. ZABLOKOWANY (Brak połączenia) */
+.tree-node.dimmed { 
+    background: #e8dac0;
+    filter: grayscale(100%) brightness(0.5); 
+    border: 2px solid #555 !important;
+    opacity: 0.7; 
+    cursor: not-allowed; 
+}
+
+/* 3. ZAKUPIONY */
+.tree-node.purchased { 
+    background: #2a2016; /* Ciemny brąz */
+    border: 3px solid var(--wow-gold) !important; 
+    box-shadow: 0 0 15px var(--wow-gold-dark); 
+}
+.tree-node.purchased .node-name { 
+    color: var(--wow-gold); 
+    font-weight: bold;
+}
+
+/* 4. PUSTY SLOT */
+.tree-node.empty {
+    background: rgba(21, 16, 12, 0.4) !important;
+    border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: none !important;
+}
+.tree-node.empty:hover {
+    background: rgba(21, 16, 12, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Obrazki */
+.tree-node img {
+    width: 42px; height: 42px; border: 1px solid #555; margin-bottom: 4px; background: #000; border-radius: 4px;
+}
+
+/* --- STYLIZACJA POŁĄCZEŃ (LINII) --- */
+
+.connector { 
+    background: var(--wow-gold); /* Bazowy kolor */
+    z-index: 0; 
+    opacity: 0; /* Domyślnie NIEWIDOCZNE (ukrywa brązowe linie) */
     transition: opacity 0.2s;
 }
 
-/* Strzałeczka */
-.tree-node .tooltip::after {
-    content: "";
-    position: absolute;
-    bottom: 100%; 
-    left: 50%;
-    margin-left: -6px;
-    border-width: 6px;
-    border-style: solid;
-    border-color: transparent transparent rgba(15, 15, 20, 0.98) transparent;
+/* Aktywne połączenie (kupione/istniejące) - Pełna widoczność i blask */
+.connector.active { 
+    opacity: 1; 
+    box-shadow: 0 0 8px var(--wow-gold); 
+    z-index: 1; 
 }
 
-.tree-node:hover .tooltip { visibility: visible; opacity: 1; }
-
-/* Inteligentne pozycjonowanie (Lewo/Prawo) */
-.tree-node.pos-left .tooltip {
-    left: 0;
-    transform: none;
+/* Tryb Edycji (Editable): Pokazuj "ducha" linii po najechaniu, żeby MG mógł ją stworzyć */
+.connector.editable:hover {
+    opacity: 0.3; /* Lekko widoczne przy celowaniu */
+    cursor: pointer;
+    background: #fff; /* Biały podświetl */
 }
-.tree-node.pos-left .tooltip::after { left: 24px; }
 
-.tree-node.pos-right .tooltip {
-    left: auto;
-    right: 0;
-    transform: none;
+/* Kształty */
+.connector.h { height: 4px; align-self: center; width: 100%; }
+.connector.v { width: 4px; justify-self: center; height: 100%; }
+/* --- 6. ZAKŁADKA MAGII (Style) --- */
+.magic-builder { display: flex; flex-direction: column; height: 100%; gap: 10px; }
+.magic-header { background: var(--wow-brown-dark); padding: 10px; border: 1px solid var(--wow-gold); border-radius: 4px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.cast-btn { background: #1565c0; color: #fff; border: 1px solid #0d47a1; padding: 5px 15px; cursor: pointer; font-family: 'Cinzel', serif; }
+.magic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
+.magic-column { background: rgba(0,0,0,0.05); border: 1px solid var(--wow-brown-light); padding: 10px; border-radius: 4px; overflow-y: auto; }
+.magic-card { background: #fff; border: 1px solid #ccc; padding: 8px; margin-bottom: 8px; cursor: pointer; border-left: 4px solid transparent; }
+.magic-card.active { background: #e3f2fd; border-color: #2196f3; border-left-color: #2196f3; }
+.mod-row { display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px solid #ddd; }
+.mod-btn { cursor: pointer; color: #777; margin: 0 5px; }
+
+/* --- FIX WIDOCZNOŚCI ZAKŁADKI --- */
+
+/* Domyślnie ukrywamy, żeby nie mieszało w innych zakładkach */
+.genesys.sheet.actor .tab.talent-tree {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+    min-height: 400px; /* Wymuszamy minimalną wysokość */
 }
-.tree-node.pos-right .tooltip::after { left: auto; right: 24px; }
 
-/* Treść Tooltipa */
-.tooltip strong {
-    display: block;
+/* Kiedy Foundry dodaje klasę .active, MUSI być widoczne */
+.genesys.sheet.actor .tab.talent-tree.active {
+    display: block !important;
+}
+
+/* Upewniamy się, że siatka ma wymiary */
+.tree-grid {
+    display: grid;
+    min-width: 600px;
+    min-height: 500px;
+    background-color: #1a1410; /* Ciemne tło dla pewności, że widać kontener */
+    border: 2px solid #5c452d;
+}
+
+/* --- WIZUALIZACJA KOSTEK W MAGII --- */
+.dice-pool-preview {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0 15px;
+    font-size: 24px; /* Rozmiar kostek */
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+/* Upewniamy się, że kostki z systemu Genesys są widoczne */
+.dice-pool-preview .die {
+    display: inline-block;
+    font-style: normal;
+    line-height: 1;
+}
+
+/* Dostosowanie nagłówka, żeby pomieścił kostki */
+.magic-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap; /* Żeby się nie rozjechało na małych oknach */
+}
+
+/* ==========================================================================
+   STYLIZACJA KREATORA POSTACI (Układ Zdjęcie + Treść)
+   ========================================================================== */
+
+.char-creator-content .species-header h4 {
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
     color: var(--wow-gold);
+    text-align: center;
+    border-bottom: 2px solid var(--wow-brown-light);
+    margin: 0 0 15px 0;
+    padding-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Kontener Flex: Trzyma zdjęcie i kolumnę treści obok siebie */
+.char-creator-content .species-flex-container {
+    display: flex;
+    gap: 20px;
+    align-items: stretch; /* To sprawia, że zdjęcie rozciąga się do wysokości tekstu */
+}
+
+/* --- KOLUMNA LEWA: PORTRET --- */
+.char-creator-content .species-portrait-col {
+    /* To sztywno trzyma szerokość kolumny */
+    flex: 0 0 220px; 
+    width: 220px;
+    
+    min-height: 450px; /* Minimalna wysokość zdjęcia */
+    
+    border: 3px solid var(--wow-gold);
+    border-radius: 6px;
+    background: #000;
+    box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    
+    display: flex; 
+    flex-direction: column;
+}
+
+.char-creator-content .species-portrait-col img {
+    width: 100%;
+    height: 100%;       /* Wypełnij całą wysokość kolumny */
+    object-fit: cover;  /* Przytnij, ale zachowaj proporcje */
+    object-position: top center; /* Skup się na twarzy */
+    flex-grow: 1;
+    border: none;
+}
+
+/* --- KOLUMNA PRAWA: TREŚĆ (Statystyki + Opis) --- */
+.char-creator-content .species-content-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Cechy */
+.char-creator-content .characteristics-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(92, 69, 45, 0.5);
+    margin: 0;
+}
+
+.char-creator-content .char-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    background: #e8dac0;
+    border: 2px solid #2e2418;
+    border-radius: 4px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.char-creator-content .char-box .char-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #4a3b2a;
+    margin-top: -3px;
+    margin-bottom: 0;
+}
+
+.char-creator-content .char-box .char-value {
+    font-family: 'Roboto Slab', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #2e2418;
+    line-height: 1;
+}
+
+/* Statystyki pochodne */
+.char-creator-content .derived-row {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+}
+
+.char-creator-content .derived-box {
+    flex: 1;
+    background: #1a1410;
+    border: 1px solid var(--wow-gold-dark);
+    border-radius: 4px;
+    padding: 5px;
+    text-align: center;
+    color: #fff;
+    height: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.char-creator-content .derived-box label {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.char-creator-content .derived-box .val {
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--wow-gold);
+}
+
+.char-creator-content .derived-box.xp {
+    border-color: #2e7d32;
+    background: linear-gradient(180deg, #1b2e1b 0%, #0d1a0d 100%);
+}
+.char-creator-content .derived-box.xp .val { color: #81c784; }
+
+/* Opis */
+.char-creator-content .desc-header {
+    font-family: 'Cinzel', serif;
+    color: var(--wow-brown-dark);
+    border-bottom: 1px solid var(--wow-brown-light);
+    margin-bottom: 5px;
+    font-weight: bold;
     font-size: 14px;
-    border-bottom: 1px solid #444;
-    padding-bottom: 4px;
-    margin-bottom: 4px;
+    text-transform: uppercase;
 }
-.tooltip .activation-tag {
-    color: #4caf50;
-    font-style: italic;
-    margin-bottom: 8px;
-    font-size: 11px;
+
+.char-creator-content .desc-box {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: justify;
+    color: #1a1410;
+    /* Ważne: flex: 1 sprawia, że opis wypełni całą wysokość do końca zdjęcia */
+    flex: 1; 
+    overflow-y: auto; /* Jeśli tekstu jest więcej niż zdjęcia, pojawi się pasek */
 }
+
+/* Grupa statystyk po prawej stronie zdjęcia */
+.char-creator-content .species-stats-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    justify-content: center; /* Wycentruj statystyki w pionie względem dużego zdjęcia */
+}
+
+/* Grupa statystyk po prawej stronie zdjęcia */
+.char-creator-content .species-stats-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0; /* Zapobiega rozpychaniu flexboxa */
+}
+
+/* --- CECHY (CHARACTERISTICS) --- */
+
+.char-creator-content .characteristics-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(92, 69, 45, 0.5);
+    margin: 0;
+}
+
+.char-creator-content .char-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60px; /* Trochę niższe, żeby pasowały obok zdjęcia */
+    
+    background: #e8dac0;
+    border: 2px solid #2e2418;
+    border-radius: 4px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.char-creator-content .char-box .char-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: #4a3b2a;
+    margin-top: -3px;
+    margin-bottom: 0;
+}
+
+.char-creator-content .char-box .char-value {
+    font-family: 'Roboto Slab', serif;
+    font-size: 22px; /* Dopasowany rozmiar */
+    font-weight: 700;
+    color: #2e2418;
+    line-height: 1;
+}
+
+/* --- STATYSTYKI POCHODNE (RANY, STRES, PD) --- */
+
+.char-creator-content .derived-row {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+}
+
+.char-creator-content .derived-box {
+    flex: 1;
+    background: #1a1410;
+    border: 1px solid var(--wow-gold-dark);
+    border-radius: 4px;
+    padding: 5px;
+    text-align: center;
+    color: #fff;
+    height: 50px; /* Wyrównanie wysokości */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.char-creator-content .derived-box label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.char-creator-content .derived-box .val {
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--wow-gold);
+}
+
+/* Wyróżnienie PD */
+.char-creator-content .derived-box.xp {
+    border-color: #2e7d32;
+    background: linear-gradient(180deg, #1b2e1b 0%, #0d1a0d 100%);
+}
+.char-creator-content .derived-box.xp .val { color: #81c784; }
+
+/* --- OPIS I INNE --- */
+
+.char-creator-content .desc-header {
+    font-family: 'Cinzel', serif;
+    color: var(--wow-brown-dark);
+    border-bottom: 1px solid var(--wow-brown-light);
+    margin-bottom: 5px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.char-creator-content .desc-box {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: justify;
+    height: 220px; /* Dopasowanie, żeby nie wyszło poza ekran */
+    overflow-y: auto;
+    color: #1a1410;
+}
+
+.char-creator-content .placeholder-msg {
+    text-align: center;
+    margin-top: 100px;
+    font-size: 18px;
+    color: #777;
+    font-family: 'Cinzel', serif;
+}
+
+/* --- STYLIZACJA WYBORU UMIEJĘTNOŚCI (KROK 2 - Poprawiona) --- */
+
+.char-creator-content .skills-selection-box {
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--wow-brown-light);
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+
+.char-creator-content .skills-header {
+    font-family: 'Cinzel', serif;
+    color: var(--wow-gold);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 12px;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+/* Siatka umiejętności - Sztywne 2 kolumny */
+.char-creator-content .skills-list-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dwie równe kolumny */
+    gap: 8px; /* Odstęp między kafelkami */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Pojedynczy kafelek umiejętności */
+.char-creator-content .skills-list-grid li label {
+    /* Flexbox naprawia "wiszenie" elementów */
+    display: flex;
+    align-items: center; /* Idealne centrowanie w pionie */
+    justify-content: flex-start; /* Tekst do lewej */
+    
+    background: #e8dac0; /* Pergamin */
+    color: #1a1410;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #8b7e6a;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Roboto Slab', serif;
+    transition: all 0.2s ease;
+    user-select: none; /* Zapobiega zaznaczaniu tekstu przy klikaniu */
+}
+
+/* Checkbox w środku */
+.char-creator-content .skills-list-grid li label input[type="checkbox"] {
+    margin: 0 10px 0 0; /* Reset marginesów + odstęp od tekstu */
+    width: 16px;
+    height: 16px;
+    accent-color: var(--wow-gold-dark); /* Kolorowanie checkboxa (nowoczesne przeglądarki) */
+    cursor: pointer;
+    transform: translateY(-1px); /* Mikro-korekta optyczna */
+}
+
+/* Hover (najazd myszką) */
+.char-creator-content .skills-list-grid li label:hover {
+    background: #fff;
+    border-color: var(--wow-gold);
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+/* Stan aktywny (Wybrany) */
+.char-creator-content .skills-list-grid li label.active {
+    background: var(--wow-brown-dark);
+    color: var(--wow-gold);
+    border-color: var(--wow-gold);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Licznik na dole */
+.char-creator-content .skills-counter {
+    text-align: right;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #ccc;
+    font-family: 'Cinzel', serif;
+}
+
+/* --- SIATKA DRZEWKA --- */
+.tree-grid { 
+    background-color: #1a1410;
+    border: 4px solid var(--wow-brown-light);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+    border-radius: 8px;
+    padding: 60px 20px 50px 20px; 
+    
+    display: grid;
+    grid-template-columns: 140px 30px 140px 30px 140px 30px 140px;
+    /* Zwarte rzędy */
+    grid-template-rows: repeat(5, 125px 25px); 
+    
+    justify-content: center;
+    position: relative; 
+    overflow: hidden; 
+    
+    /* Minimalna wysokość, ale może rosnąć */
+    min-height: 400px; 
+    margin-top: 0;
+    
+    /* Domyślny kursor */
+    cursor: default;
+}
+
+/* Kursor łapki przy edycji */
+.tree-grid.editable-bg {
+    cursor: grab;
+}
+.tree-grid.editable-bg:active {
+    cursor: grabbing;
+}
+
+/* --- EDYTOR OPISU (Naprawiony) --- */
+.spec-description-editor {
+    background: rgba(255, 255, 255, 0.5); /* Jaśniejsze tło, żeby było widać pole */
+    border: 1px solid var(--wow-brown-light);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 5px;
+    
+    /* WAŻNE: Minimalna wysokość, żeby edytor nie zapadł się do 0 */
+    min-height: 200px; 
+    display: block; /* Powrót do bloku, flex czasem psuje ProseMirror */
+}
+
+/* Wewnętrzna klasa edytora Foundry */
+.spec-description-editor .editor {
+    min-height: 180px;
+    height: auto !important;
+    font-family: 'Roboto Slab', serif;
+    color: #1a1410;
+}
+
+/* Ukrywamy zbędne ramki, ale zostawiamy treść */
+.prosemirror {
+    border: none !important;
+    background: transparent !important;
+}
+
+/* --- SIATKA DRZEWKA --- */
+.tree-grid { 
+    background-color: #1a1410;
+    border: 4px solid var(--wow-brown-light);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+    border-radius: 8px;
+    padding: 60px 20px 50px 20px; 
+    
+    display: grid;
+    grid-template-columns: 140px 30px 140px 30px 140px 30px 140px;
+    grid-template-rows: repeat(5, 125px 25px); 
+    
+    justify-content: center;
+    position: relative; 
+    overflow: hidden; 
+    
+    min-height: 400px; 
+    margin-top: 0;
+    cursor: default;
+
+    /* OPTYMALIZACJA: Przenosi renderowanie tła na GPU */
+    will-change: background-position;
+}
+
+.tree-grid {
+    background-repeat: no-repeat !important; /* Kluczowe: brak nieskończonej mapy */
+    background-attachment: local;
+}
+
+/* --- KROK 4: UKŁAD EXP + DRZEWKO (ZOPTYMALIZOWANY) --- */
+
+/* Główny kontener gridowy */
+.step-4-layout {
+    display: grid;
+    /* ZMIANA: Zwężamy lewą kolumnę z 320px na 260px, reszta dla drzewka */
+    grid-template-columns: 260px 1fr; 
+    grid-template-rows: 100%;
+    gap: 10px;
+    height: calc(100% - 40px);
+    overflow: hidden;
+}
+
+/* LEWA KOLUMNA (Zakupy) */
+.xp-sidebar {
+    overflow-y: auto;
+    padding-right: 5px; /* Mniejszy padding */
+    border-right: 2px solid var(--wow-brown-light);
+}
+
+/* PRAWA KOLUMNA (Drzewko) */
+.tree-container-wrapper {
+    position: relative;
+    overflow: hidden; /* Ukrywamy paski przewijania kontenera */
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--wow-brown-light);
+    border-radius: 4px;
+    display: flex;             /* Centrowanie drzewka */
+    justify-content: center;   /* Centrowanie poziome */
+    align-items: flex-start;   /* Start od góry */
+}
+
+/* Skalowanie drzewka wewnątrz kontenera */
+.tree-container-wrapper #active-tree-canvas {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    
+    /* FIX WIDOCZNOŚCI: Oddalamy drzewko o 10%, żeby weszło całe */
+    zoom: 0.9; 
+}
+
+/* --- KOMPAKTOWE ATRYBUTY (Zamiast tabeli) --- */
+.attr-mini-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Zmiana na 1 kolumnę przy wąskim pasku (czytelniej) */
+    gap: 4px;
+    margin-bottom: 15px;
+}
+/* Jeśli wolisz jednak 2 kolumny atrybutów przy szerokości 260px, odkomentuj to: */
+/* .attr-mini-grid { grid-template-columns: 1fr 1fr; } */
+
+.attr-mini-box {
+    background: #e8dac0;
+    border: 1px solid #8b7e6a;
+    border-radius: 3px;
+    padding: 3px 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.attr-mini-label {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: bold;
+    color: #4a3b2a;
+    text-transform: uppercase;
+}
+
+.attr-mini-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.5);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.attr-val {
+    font-weight: bold;
+    font-size: 13px;
+    min-width: 15px;
+    text-align: center;
+}
+
+/* Tabela umiejętności - ściśnięcie */
+.compact-table td {
+    padding: 2px 2px !important; /* Mniejszy padding */
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    font-size: 10px !important; /* Nieco mniejsza czcionka */
+}
+.compact-table tr:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* --- FIX OKNA PRZEDMIOTU (RASA/PROFESJA) --- */
+
+/* 1. Główne okno: Wyłączamy elastyczność */
+.window-app.warcraft-item-window {
+    height: auto !important; 
+    min-height: 0 !important;
+    display: block !important; /* Ważne: usuwa domyślny flex layout okna */
+}
+
+/* 2. Wnętrze okna: Ma rosnąć tylko tyle ile trzeba */
+.warcraft-item-window .window-content {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important; /* Wyłączamy paski przewijania wewnątrz */
+    background: var(--wow-parchment) !important;
+    display: block !important;
+}
+
+/* 3. Formularz: Resetujemy wysokość 100% */
+.warcraft-item-window form {
+    height: auto !important;
+    display: block !important;
+}
+
+/* 4. FIX ELEMENTU ZE SCREENA: Pasek zakładek */
+/* Zablokuj rozciąganie paska nawigacji */
+.warcraft-item-window nav.sheet-tabs {
+    flex: 0 0 auto !important; /* Nie rozciągaj się! */
+    height: auto !important;
+    margin-bottom: 5px !important;
+}
+
+/* 5. Sekcja treści (body) */
+.warcraft-item-window .sheet-body {
+    height: auto !important;
+    overflow: visible !important;
+}
+/* --- FIX ZDJĘCIA RASY (Ochrona przed zgnieceniem) --- */
+
+.warcraft-item-window .warcraft-portrait-preview {
+    /* Wymuszamy wysokość, żeby 'height: auto' okna go nie zgniotło */
+    height: 300px !important;
+    min-height: 300px !important;
+    
+    /* Upewniamy się, że jest traktowane jako blok zajmujący 100% szerokości */
+    width: 100% !important;
+    display: block !important;
+    
+    /* Fix dla flexboxa (jeśli rodzic nadal jest flexem) */
+    flex: 0 0 300px !important;
+    
+    /* Reset marginesów, żeby nie robić pustych dziur */
+    margin-top: 5px !important;
+    margin-bottom: 10px !important;
+}
+
+/* --- PASEK NARZĘDZI EDYTORA (SYMBOLE) --- */
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 5px;
+    padding: 3px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid #5c452d;
+    border-radius: 4px;
+}
+
+.sym-btn {
+    border: 1px solid rgba(0,0,0,0.3);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Genesys Glyphs', sans-serif; /* Zakładam, że system ma font */
+    font-weight: bold;
+    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    text-shadow: none;
+    transition: transform 0.1s;
+}
+
+.sym-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
+.sym-btn:active { transform: scale(0.95); }
+
+/* --- FIX SYMBOLI (DANE Z SYSTEMU GENESYS) --- */
+@font-face {
+    font-family: "MyWarcraftSymbols";
+    src: url("/systems/genesys/assets/fonts/GenesysSymbols-Regular-Ligatures.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+}
+
+.w-sym {
+    font-family: "MyWarcraftSymbols", sans-serif !important;
+    font-style: normal;
+    font-weight: normal;
+    text-transform: none;
+    line-height: 1;
+    display: inline-block;
+    font-size: 1.2em;
+    -webkit-text-stroke: 0;
+}
+
+/* Kolory (Wyrównane do toolbara) */
+.w-sym.ab { color: #41ad49; } 
+.w-sym.pr { color: #fff200; text-shadow: 0 0 1px black; }
+.w-sym.di { color: #522380; }
+.w-sym.ch { color: #761213; }
+.w-sym.bo { color: #72cddc; }
+.w-sym.se { color: #1e1e1e; }
+
+.w-sym.su { color: #000; }
+.w-sym.ad { color: #000; }
+.w-sym.tr { color: #fff200; text-shadow: 0 0 1px black; }
+.w-sym.fa { color: #000; }
+.w-sym.th { color: #000; }
+.w-sym.de { color: #761213; }
+
+.simple-editor-window .die {
+    font-size: 1.5em; /* Powiększamy, żeby było widać */
+    line-height: 1;
+    vertical-align: middle;
+}
+
+/* ==========================================================================
+   MENU PROSEMIRROR - STYLE IKON GENESYS
+   ========================================================================== */
+
+/* Kontener dla ikony w menu */
+.genesys-pm-icon {
+    font-family: "Genesys Symbols", "Genesys Glyphs", sans-serif !important;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    font-size: 18px; /* Rozmiar symbolu */
+    text-shadow: 0 0 2px rgba(0,0,0,0.5); /* Lekki cień dla czytelności */
+}
+
+/* --- KOŚCI (Kolory) --- */
+.g-die-ability    { color: #43A047; } /* Zielona (k) */
+.g-die-proficiency{ color: #FDD835; text-shadow: 0 0 1px #000; } /* Żółta (l) */
+.g-die-difficulty { color: #5E35B1; } /* Fioletowa (d) */
+.g-die-challenge  { color: #B71C1C; } /* Czerwona (c) */
+.g-die-boost      { color: #81D4FA; } /* Niebieska (b) */
+.g-die-setback    { color: #212121; } /* Czarna (j) */
+
+/* --- SYMBOLE WYNIKÓW --- */
+.g-res-success    { color: #000; } /* Sukces (s) */
+.g-res-failure    { color: #000; } /* Porażka (f) */
+.g-res-advantage  { color: #000; } /* Przewaga (a) */
+.g-res-threat     { color: #000; } /* Zagrożenie (h) */
+.g-res-triumph    { color: #FDD835; text-shadow: 0 0 1px #000; } /* Triumf (t) */
+.g-res-despair    { color: #B71C1C; } /* Rozpacz (y/d) */
+
+/* Fix dla ikon w menu ProseMirror */
+.prosemirror-menu .genesys-selector .font-genesys-symbols {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transform: translateY(2px); /* Mikro-korekta w pionie */
+}
+
+/* ==========================================================================
+   MENU PROSEMIRROR - SYMBOLE (Metoda ::before)
+   ========================================================================== */
+
+/* Bazowa klasa dla wszystkich ikon w menu Genesys */
+.genesys-pm-icon {
+    font-family: "Genesys Symbols", "Genesys Glyphs", sans-serif !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-variant: normal !important;
+    text-transform: none !important;
+    line-height: 1;
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    font-size: 18px;
+    margin-right: 5px; /* Odstęp od tekstu */
+}
+
+/* Definicje konkretnych symboli (Content = Litera z czcionki) */
+
+/* --- KOŚCI --- */
+.genesys-pm-icon.ability::before     { content: "k"; color: #43A047; } /* Zielona */
+.genesys-pm-icon.proficiency::before { content: "l"; color: #FDD835; text-shadow: 0 0 1px #000; } /* Żółta */
+.genesys-pm-icon.difficulty::before  { content: "d"; color: #5E35B1; } /* Fiolet */
+.genesys-pm-icon.challenge::before   { content: "c"; color: #B71C1C; } /* Czerwona */
+.genesys-pm-icon.boost::before       { content: "b"; color: #81D4FA; } /* Niebieska */
+.genesys-pm-icon.setback::before     { content: "j"; color: #212121; } /* Czarna */
+
+/* --- SYMBOLE --- */
+.genesys-pm-icon.success::before     { content: "s"; color: #000; }
+.genesys-pm-icon.failure::before     { content: "f"; color: #000; }
+.genesys-pm-icon.advantage::before   { content: "a"; color: #000; }
+.genesys-pm-icon.threat::before      { content: "h"; color: #000; }
+.genesys-pm-icon.triumph::before     { content: "t"; color: #FDD835; text-shadow: 0 0 1px #000; }
+.genesys-pm-icon.despair::before     { content: "y"; color: #B71C1C; } /* Czasem 'y', czasem 'd' w fontach Genesys */

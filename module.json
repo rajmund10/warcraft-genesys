@@ -5,15 +5,39 @@
   "version": "1.0.0",
   "compatibility": {
     "minimum": "11",
-    "verified": "12"
+    "verified": "13"
   },
   "esmodules": ["scripts/main.js"],
   "styles": ["styles/module.css"],
-  "packs": [
+"packs": [
     {
       "name": "warcraft-skills",
       "label": "Warcraft Skills",
       "path": "packs/warcraft-skills",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "warcraft-races",
+      "label": "Warcraft Races",
+      "path": "packs/warcraft-races",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "warcraft-racial-abilities",
+      "label": "Warcraft Racial Abilities",
+      "path": "packs/warcraft-racial-abilities",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "warcraft-careers",
+      "label": "Warcraft Classes",
+      "path": "packs/warcraft-careers",
       "type": "Item",
       "system": "genesys",
       "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
@@ -33,12 +57,29 @@
       "type": "Item",
       "system": "genesys",
       "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    
+    {
+      "name": "warcraft-specializations",
+      "label": "Warcraft Specializations",
+      "path": "packs/warcraft-specializations",
+      "type": "Item",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "warcraft-tables",
+      "label": "Warcraft Tables",
+      "path": "packs/warcraft-tables",
+      "type": "RollTable",
+      "system": "genesys",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
     }
   ],
   "languages": [
     {
       "lang": "pl",
-      "name": "Polski (Warcraft)",
+      "name": "Polski",
       "path": "lang/pl.json"
     }
   ],
