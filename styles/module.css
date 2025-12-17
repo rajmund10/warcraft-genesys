@@ -1322,3 +1322,32 @@
 .genesys-pm-icon.threat::before      { content: "h"; color: #000; }
 .genesys-pm-icon.triumph::before     { content: "t"; color: #FDD835; text-shadow: 0 0 1px #000; }
 .genesys-pm-icon.despair::before     { content: "y"; color: #B71C1C; } /* Czasem 'y', czasem 'd' w fontach Genesys */
+
+/* --- FIX DLA TOOLTIPÓW --- */
+
+/* Upewniamy się, że tooltipy Foundry widzą czcionkę Genesys */
+#tooltip .genesys-pm-icon {
+    font-family: "Genesys Glyphs", sans-serif !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-variant: normal !important;
+    text-transform: none !important;
+    line-height: 1;
+    display: inline-block;
+    width: auto;
+    text-align: center;
+    font-size: 1.2em; /* Troszkę większe w dymku */
+    margin: 0 2px;
+}
+
+/* Kolory (muszą być globalne, żeby działały w tooltipie) */
+#tooltip .genesys-pm-icon.ability::before     { content: "k"; color: #43A047; }
+#tooltip .genesys-pm-icon.proficiency::before { content: "l"; color: #FDD835; text-shadow: 0 0 1px #000; }
+#tooltip .genesys-pm-icon.difficulty::before  { content: "d"; color: #5E35B1; }
+#tooltip .genesys-pm-icon.challenge::before   { content: "c"; color: #B71C1C; }
+#tooltip .genesys-pm-icon.boost::before       { content: "b"; color: #81D4FA; }
+#tooltip .genesys-pm-icon.setback::before     { content: "j"; color: #212121; }
+#tooltip .genesys-pm-icon.failure::before     { content: "f"; color: #212121; }
+#tooltip .genesys-pm-icon.threat::before      { content: "h"; color: #212121; }
+#tooltip .genesys-pm-icon.triumph::before     { content: "x"; color: #FDD835; text-shadow: 0 0 1px #000; }
+#tooltip .genesys-pm-icon.despair::before     { content: "y"; color: #B71C1C; }

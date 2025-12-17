@@ -1,5 +1,7 @@
 import { TalentTreeManager } from "../tree-manager.js"; 
 
+console.log("%cWARCRAFT KREATOR: WERSJA FINALNA (Więź z Niebem -> Jeździectwo)", "color: #00ff00; background: #000; font-weight: bold; font-size: 16px; padding: 5px;");
+
 export class CharacterCreator extends FormApplication {
     
     constructor(actor, options) {
@@ -11,7 +13,7 @@ export class CharacterCreator extends FormApplication {
         };
 
         this.creationData = {
-            step: 1, speciesId: null, careerId: null, careerSkills: [], specId: null, 
+            step: 1, speciesId: null, careerId: null, careerSkills: [], specId: null, raceGroup: null,
             attributes: { brawn: 1, agility: 1, intellect: 1, cunning: 1, willpower: 1, presence: 1 },
             skills: {}, 
             purchasedTalents: [], 
@@ -35,25 +37,26 @@ export class CharacterCreator extends FormApplication {
         });
     }
 
-    // --- SKANOWANIE BONUSÓW DO SKILLI ---
-    // --- SKANOWANIE BONUSÓW DO SKILLI (FIX: Skanowanie grantedItems) ---
+    // --- FIX BŁĘDÓW TEXT EDITOR ---
+    async _enrich(content) {
+        if (!content) return "";
+        if (foundry.applications?.ux?.TextEditor?.enrichHTML) {
+            return await foundry.applications.ux.TextEditor.enrichHTML(content, { async: true });
+        }
+        return await TextEditor.enrichHTML(content, { async: true });
+    }
+
     _getSkillBonuses() {
         const bonuses = {};
         const itemsToCheck = [];
         
-        // 1. RASA - Skanujemy główny obiekt ORAZ jego wewnętrzne przedmioty
         if (this.creationData.speciesId) {
             const species = this.loadedData.races.find(r => r.id === this.creationData.speciesId);
             if (species) {
-                // Dodajemy samą rasę (gdyby miała efekt bezpośrednio na sobie)
                 itemsToCheck.push(species);
-
-                // FIX: Dodajemy przedmioty zagnieżdżone w rasie (Zdolności rasowe)
-                // To tutaj zazwyczaj ukryty jest efekt "+1 do Survival"
                 if (species.system.grantedItems && Array.isArray(species.system.grantedItems)) {
                     species.system.grantedItems.forEach(i => itemsToCheck.push(i));
                 }
-                // Fallback dla starszych danych (.items)
                 else if (species.items) {
                     const contents = species.items.contents || species.items;
                     if (Array.isArray(contents)) contents.forEach(i => itemsToCheck.push(i));
@@ -65,7 +68,6 @@ export class CharacterCreator extends FormApplication {
         if (this.creationData.careerId) itemsToCheck.push(this.loadedData.careers.find(c => c.id === this.creationData.careerId));
         if (this.creationData.specId) itemsToCheck.push(this.loadedData.specializations.find(s => s.id === this.creationData.specId));
 
-        // Talenty z Drzewka
         if (this.creationData.purchasedTalents.length > 0) {
             this.creationData.purchasedTalents.forEach(uniqueId => {
                 const [specId, nodeKey] = uniqueId.split('_');
@@ -80,12 +82,9 @@ export class CharacterCreator extends FormApplication {
             });
         }
 
-        // Skanowanie efektów
         itemsToCheck.forEach(item => {
             if (!item) return;
             let effectsArray = [];
-            
-            // Obsługa różnych formatów efektów (Dokument, Obiekt surowy, Mapa, Tablica)
             if (item.effects) {
                 if (Array.isArray(item.effects)) effectsArray = item.effects;
                 else if (item.effects instanceof Map || (item.effects.map && item.effects.get)) effectsArray = Array.from(item.effects.values());
@@ -100,7 +99,6 @@ export class CharacterCreator extends FormApplication {
                         const value = parseInt(change.value) || 0;
                         if (!bonuses[skillName]) bonuses[skillName] = 0;
                         bonuses[skillName] += value;
-                        console.log(`WARCRAFT MOD | Wykryto bonus: ${skillName} +${value} ze źródła: ${item.name}`);
                     }
                 });
             });
@@ -109,73 +107,78 @@ export class CharacterCreator extends FormApplication {
     }
 
     async getData() {
-        // Upewnij się, że dane są załadowane
         await this._loadCompendiumData();
-        
         const data = super.getData();
         data.state = this.creationData;
         
-        // Listy wyboru
-        data.races = this.loadedData.races;
+        // --- LOGIKA GRUPOWANIA RAS ---
+        const groupedRaces = {};
+        
+        this.loadedData.races.forEach(race => {
+            // Pobieramy pierwsze słowo jako nazwę grupy (np. "Człowiek", "Krasnolud")
+            // Usuwamy ewentualne dwukropki czy nawiasy
+            let groupName = race.name.split(" ")[0].replace(/[:()]/g, "").trim();
+            
+            if (!groupedRaces[groupName]) groupedRaces[groupName] = [];
+            groupedRaces[groupName].push(race);
+        });
+
+        // Sortujemy nazwy grup alfabetycznie
+        data.raceGroups = Object.keys(groupedRaces).sort((a, b) => a.localeCompare(b));
+
+        // Sprawdzamy, czy wybrana grupa jest poprawna
+        if (this.creationData.raceGroup && !groupedRaces[this.creationData.raceGroup]) {
+            this.creationData.raceGroup = null;
+        }
+
+        // Jeśli grupa jest wybrana, przekazujemy listę ras z tej grupy do 2 dropdowna
+        if (this.creationData.raceGroup) {
+            data.availableSubRaces = groupedRaces[this.creationData.raceGroup].sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            data.availableSubRaces = [];
+        }
+        
+        // (Reszta standardowych danych)
         data.careers = this.loadedData.careers;
         data.specializations = this.loadedData.specializations;
 
-        // Flagi kroków
         data.isStep1 = this.creationData.step === 1;
         data.isStep2 = this.creationData.step === 2;
         data.isStep3 = this.creationData.step === 3;
         data.isStep4 = this.creationData.step === 4;
         data.isStep5 = this.creationData.step === 5;
 
-        // =====================================================
-        // --- 1. RASA (ARCHETYPE) ---
-        // =====================================================
         data.currentSpecies = this.loadedData.races.find(r => r.id === this.creationData.speciesId);
         data.raceImage = "icons/svg/mystery-man.svg";
         data.enrichedRaceDescription = "";
         data.racialAbilities = []; 
 
         if (data.currentSpecies) {
-            // Portret rasy (Custom Flag lub domyślny obrazek)
             let flag = data.currentSpecies.flags?.["warcraft-genesys"]?.racePortrait;
             if (!flag) flag = data.currentSpecies.getFlag?.("warcraft-genesys", "racePortrait");
             data.raceImage = flag || data.currentSpecies.img;
+            data.enrichedRaceDescription = await this._enrich(data.currentSpecies.system.description);
             
-            // Opis rasy
-            data.enrichedRaceDescription = await TextEditor.enrichHTML(data.currentSpecies.system.description, { async: true });
-            
-            // --- POBIERANIE ZDOLNOŚCI RASOWYCH (FIX NATYWNY) ---
             let raceItems = [];
-            
-            // A. Czytamy z natywnego pola Genesys: system.grantedItems
-            // To tutaj lądują itemy po naszym nowym Drag&Drop w main.js
             if (data.currentSpecies.system.grantedItems && Array.isArray(data.currentSpecies.system.grantedItems)) {
                 raceItems = data.currentSpecies.system.grantedItems;
-            }
-            // B. Fallback: sprawdźmy też standardową kolekcję .items (dla kompatybilności)
-            else if (data.currentSpecies.items && data.currentSpecies.items.size > 0) {
+            } else if (data.currentSpecies.items && data.currentSpecies.items.size > 0) {
                 raceItems = data.currentSpecies.items.contents;
             }
 
-            // Mapowanie i HTML opisów
             if (raceItems.length > 0) {
                 data.racialAbilities = await Promise.all(raceItems.map(async (item) => {
-                    // Wyciąganie opisu (może być stringiem lub obiektem .value)
                     let descText = item.system?.description || "";
                     if (typeof descText === 'object' && descText.value) descText = descText.value;
-                    
                     return {
                         name: item.name,
                         img: item.img || "icons/svg/item-bag.svg",
-                        description: await TextEditor.enrichHTML(descText, {async: true})
+                        description: await this._enrich(descText)
                     };
                 }));
             }
         }
 
-        // =====================================================
-        // --- 2. PROFESJA (CAREER) ---
-        // =====================================================
         data.currentCareer = this.loadedData.careers.find(c => c.id === this.creationData.careerId);
         data.careerImage = "icons/svg/mystery-man.svg";
         data.enrichedCareerDescription = "";
@@ -184,19 +187,14 @@ export class CharacterCreator extends FormApplication {
             let flag = data.currentCareer.flags?.["warcraft-genesys"]?.careerPortrait;
             if (!flag) flag = data.currentCareer.getFlag?.("warcraft-genesys", "careerPortrait");
             data.careerImage = flag || data.currentCareer.img;
-            data.enrichedCareerDescription = await TextEditor.enrichHTML(data.currentCareer.system.description, { async: true });
+            data.enrichedCareerDescription = await this._enrich(data.currentCareer.system.description);
         }
 
-        // =====================================================
-        // --- 3. SPECJALIZACJA ---
-        // =====================================================
         data.currentSpec = this.loadedData.specializations.find(s => s.id === this.creationData.specId);
         data.enrichedSpecDescription = "";
         
         if (data.currentSpec) {
-            data.enrichedSpecDescription = await TextEditor.enrichHTML(data.currentSpec.system.description, { async: true });
-            
-            // Tło specjalizacji (jeśli zdefiniowane w drzewku)
+            data.enrichedSpecDescription = await this._enrich(data.currentSpec.system.description);
             const treeData = data.currentSpec.flags?.["warcraft-genesys"]?.treeData;
             if (treeData && treeData.backgroundImage) {
                 data.specBg = treeData.backgroundImage;
@@ -204,7 +202,6 @@ export class CharacterCreator extends FormApplication {
             }
         }
 
-        // Opcje umiejętności klasowych
         if (data.currentCareer) {
             const rawSkills = data.currentCareer.system.careerSkills || [];
             data.careerSkillOptions = rawSkills.map(skill => (typeof skill === 'string' ? skill : (skill.name || "Skill")));
@@ -212,35 +209,25 @@ export class CharacterCreator extends FormApplication {
             data.careerSkillOptions = [];
         }
 
-        // =====================================================
-        // --- 4. KALKULACJE PD I ATRYBUTÓW ---
-        // =====================================================
         const availableXP = this.creationData.totalXP - this.creationData.spentXP;
 
-        // ATTRYBUTY (Characteristics)
         data.attributeList = Object.entries(this.creationData.attributes).map(([key, val]) => {
             const nextCost = (val + 1) * 10;
             let baseVal = 1;
-            // Pobieramy bazę z rasy
             if (data.currentSpecies?.system?.characteristics) {
                 baseVal = data.currentSpecies.system.characteristics[key] || 1;
             }
-            
             return {
                 key: key, 
                 label: this._localizeAttribute(key), 
                 value: val, 
                 cost: nextCost,
-                // Można kupić jeśli nie max (5) i stać nas na to
                 canBuy: (val < 5) && (availableXP >= nextCost),
-                // Można zwrócić tylko jeśli jest wyższe niż baza rasowa
                 canRefund: val > baseVal
             };
         });
 
-        // =====================================================
-        // --- 5. UMIEJĘTNOŚCI (SKILLS) ---
-        // =====================================================
+        // --- SKILLS ---
         const categories = {
             "combat": { label: "Walka", skills: [] }, 
             "general": { label: "Ogólne", skills: [] },
@@ -249,18 +236,18 @@ export class CharacterCreator extends FormApplication {
             "magic": { label: "Magia", skills: [] }
         };
 
-        // Pobieramy bonusy z talentów/rasy
         const skillBonuses = this._getSkillBonuses(); 
 
         this.loadedData.skills.forEach(skillItem => {
             const key = skillItem.name; 
+            
+            // --- SPRAWDZANIE CZY SKILL JEST KLASOWY (GWIAZDKA) ---
             const isCareer = this._isCareerSkill(key);
             
             const purchasedRank = this.creationData.skills[key] || 0;
             const bonusRank = skillBonuses[key] || 0;
             const totalRank = purchasedRank + bonusRank;
             
-            // Koszt: (Rank+1)*5, +5 jeśli nieklasowa
             const nextCost = (totalRank + 1) * 5 + (isCareer ? 0 : 5);
             
             let catKey = skillItem.system.category ? skillItem.system.category.toLowerCase() : "general";
@@ -277,17 +264,11 @@ export class CharacterCreator extends FormApplication {
             });
         });
 
-        // Sortowanie alfabetyczne w kategoriach
         for (const cat of Object.values(categories)) {
             cat.skills.sort((a, b) => a.label.localeCompare(b.label));
         }
-        
-        // Filtrowanie pustych kategorii
         data.categorizedSkills = Object.values(categories).filter(c => c.skills.length > 0);
 
-        // =====================================================
-        // --- 6. STATYSTYKI POCHODNE ---
-        // =====================================================
         if (data.currentSpecies) {
             const raceWounds = data.currentSpecies.system.woundThreshold || 10;
             const raceStrain = data.currentSpecies.system.strainThreshold || 10;
@@ -326,19 +307,56 @@ export class CharacterCreator extends FormApplication {
         this.loadedData.tables = await getPackContent(packs.tables);
     }
 
+    // --- FUNKCJA GWIAZDKI (WIZUALNA) ---
     _isCareerSkill(skillName) {
-        if (!this.creationData.careerId) return false;
-        if (this.creationData.careerSkills.includes(skillName)) return true;
-        const career = this.loadedData.careers.find(c => c.id === this.creationData.careerId);
-        if (career && career.system.careerSkills) {
-             const skills = career.system.careerSkills.map(s => (typeof s === 'string' ? s : s.name));
-             if (skills.includes(skillName)) return true;
+        const cleanName = String(skillName).trim();
+
+        // 1. LOGIKA WILDHAMMER (Więź z Niebem -> Jeździectwo = GWIAZDKA)
+        if (cleanName === "Jeździectwo" && this.creationData.speciesId) {
+            const race = this.loadedData.races.find(r => r.id === this.creationData.speciesId);
+            if (race) {
+                // Skanujemy zawartość rasy
+                const allRaceItems = [];
+                // Nowy standard Genesys
+                if (race.system.grantedItems && Array.isArray(race.system.grantedItems)) {
+                    allRaceItems.push(...race.system.grantedItems);
+                }
+                // Stary standard (Embedded)
+                if (race.items) {
+                    const embedded = race.items.contents || race.items;
+                    if (Array.isArray(embedded)) allRaceItems.push(...embedded);
+                }
+
+                const hasSkyBond = allRaceItems.some(i => 
+                    i.name.toLowerCase().includes("więź z niebem") || 
+                    i.name.toLowerCase().includes("bond with the sky")
+                );
+
+                if (hasSkyBond) return true; // Jest gwiazdka!
+            }
         }
-        const spec = this.loadedData.specializations.find(s => s.id === this.creationData.specId);
-        if (spec && spec.system.careerSkills) {
-            const specSkills = spec.system.careerSkills.map(s => (typeof s === 'string' ? s : s.name));
-            if (specSkills.includes(skillName)) return true;
+
+        // 2. Czy jest na liście wybranych darmowych (Krok 2)?
+        if (this.creationData.careerSkills.includes(cleanName)) return true;
+
+        // 3. Profesja
+        if (this.creationData.careerId) {
+            const career = this.loadedData.careers.find(c => c.id === this.creationData.careerId);
+            if (career && career.system.careerSkills) {
+                const careerSkills = career.system.careerSkills.map(s => (typeof s === 'string' ? s : (s.name || "")).trim());
+                if (careerSkills.includes(cleanName)) return true;
+            }
         }
+
+        // 4. Specjalizacja
+        if (this.creationData.specId) {
+            const spec = this.loadedData.specializations.find(s => s.id === this.creationData.specId);
+            if (spec && spec.system.careerSkills) {
+                const specSkills = spec.system.careerSkills.map(s => (typeof s === 'string' ? s : (s.name || "")).trim());
+                if (specSkills.includes(cleanName)) return true;
+            }
+        }
+
         return false;
     }
 
@@ -347,7 +365,6 @@ export class CharacterCreator extends FormApplication {
         return map[key] || key;
     }
 
-    // --- WALIDACJA KROKÓW (Naprawione) ---
     _validateStep() {
         const d = this.creationData;
         if (d.step === 1 && !d.speciesId) { ui.notifications.warn("Wybierz pochodzenie!"); return false; }
@@ -356,23 +373,17 @@ export class CharacterCreator extends FormApplication {
         return true;
     }
 
-    // --- RENDEROWANIE DRZEWKA W KREATORZE (KROK 4) ---
     _renderActiveTree(html) {
-        // Znajdź kontener w DOM
         const container = html.find('#active-tree-canvas');
         if (container.length === 0) return;
 
-        // Pobierz dane specjalizacji
         const specItem = this.loadedData.specializations.find(s => s.id === this.creationData.specId);
         if (!specItem) {
             container.html('<p style="text-align:center; margin-top:20px;">Nie wybrano specjalizacji.</p>');
             return;
         }
 
-        // Wyciągnij dane drzewka (treeData)
         let treeData = specItem.flags?.["warcraft-genesys"]?.treeData;
-        
-        // Fallback dla surowych danych
         if (!treeData && specItem._source?.flags?.["warcraft-genesys"]?.treeData) {
             treeData = specItem._source.flags["warcraft-genesys"].treeData;
         }
@@ -382,34 +393,22 @@ export class CharacterCreator extends FormApplication {
             return;
         }
 
-        // Przygotuj kopię danych z zaznaczonymi zakupionymi talentami
-        // Musimy zrobić głęboką kopię, żeby nie modyfikować oryginału w pamięci
         const treeDataCopy = JSON.parse(JSON.stringify(treeData));
-        
         for (const [nodeKey, node] of Object.entries(treeDataCopy.nodes)) {
             const uniqueId = `${specItem.id}_${nodeKey}`;
-            // Sprawdź czy talent jest na liście kupionych w kreatorze
             node.purchased = this.creationData.purchasedTalents.includes(uniqueId);
         }
 
-        // Zainicjuj Managera w trybie Kreatora
-        // Przekazujemy 'treeDataCopy' jako 3 argument -> to włącza tryb isCreatorMode w TreeManagerze
         const treeManager = new TalentTreeManager(this, container, treeDataCopy);
         
-        // Nadpisujemy funkcje managera, żeby działały na danych kreatora, a nie na aktorze
         treeManager.purchaseTalent = async (key, node, cost) => {
             const uniqueId = `${specItem.id}_${key}`;
-            
-            // Walidacja kosztu
             if ((this.creationData.totalXP - this.creationData.spentXP) < cost) {
                 return ui.notifications.warn("Za mało PD!");
             }
-            // Walidacja połączeń (używamy logiki managera)
             if (!treeManager.checkAccessibility(parseInt(key.split('-')[0]), parseInt(key.split('-')[1]))) {
                  return ui.notifications.warn("Musisz najpierw kupić połączony talent!");
             }
-
-            // Kupno
             this.creationData.spentXP += cost;
             this.creationData.purchasedTalents.push(uniqueId);
             this.render(true);
@@ -417,29 +416,22 @@ export class CharacterCreator extends FormApplication {
 
         treeManager.refundTalent = async (key, node, cost) => {
             const uniqueId = `${specItem.id}_${key}`;
-            
-            // Walidacja spójności (czy nie odcinamy gałęzi)
-            // Musimy tymczasowo usunąć node z "zakupionych" w danych managera, żeby sprawdzić integrity
             node.purchased = false; 
             if (!treeManager.checkTreeIntegrity(key)) {
-                node.purchased = true; // przywracamy
+                node.purchased = true; 
                 return ui.notifications.warn("Nie możesz zwrócić tego talentu (przerywa ścieżkę)!");
             }
-
-            // Zwrot
             this.creationData.spentXP -= cost;
             this.creationData.purchasedTalents = this.creationData.purchasedTalents.filter(id => id !== uniqueId);
             this.render(true);
         };
 
-        // Renderuj drzewko
         treeManager.init();
     }
 
     activateListeners(html) {
         super.activateListeners(html);
         
-        // Nawigacja
         html.find('.nav-btn').click(ev => {
             const btn = $(ev.currentTarget);
             if (btn.hasClass('finish-btn')) { this._onFinish(); return; }
@@ -449,7 +441,23 @@ export class CharacterCreator extends FormApplication {
             this.render(true);
         });
 
-        // Dropdowny
+        html.find('.race-group-select').change(ev => {
+            ev.stopPropagation();
+            // Zapisujemy wybraną grupę
+            this.creationData.raceGroup = ev.target.value;
+            // Resetujemy wybór konkretnej rasy, bo zmieniliśmy kategorię
+            this.creationData.speciesId = null;
+            // Resetujemy bonusy Gnomów/Ludzi przy zmianie grupy
+            this.creationData.gnomeBonusSkill = null; 
+            
+            this.render(true);
+        });
+
+        html.find('.species-dropdown').not('.career-dropdown').not('.spec-dropdown').change(ev => {
+            ev.stopPropagation();
+            this._setSpecies(ev.target.value);
+        });
+
         html.find('.species-dropdown').not('.career-dropdown').not('.spec-dropdown').change(ev => {
             ev.stopPropagation();
             this._setSpecies(ev.target.value);
@@ -466,7 +474,6 @@ export class CharacterCreator extends FormApplication {
             this.render(true); 
         });
         
-        // Skill Check (Darmowe klasowe)
         html.find('.skill-check').change(ev => {
             const skillName = $(ev.currentTarget).val();
             const isSelected = this.creationData.careerSkills.includes(skillName);
@@ -487,7 +494,6 @@ export class CharacterCreator extends FormApplication {
             this.render(true); 
         });
 
-        // Atrybuty
         html.find('.attr-buy').click(ev => { 
             const key = $(ev.currentTarget).attr('data-key');
             const currentVal = this.creationData.attributes[key];
@@ -511,7 +517,8 @@ export class CharacterCreator extends FormApplication {
             this.render(true); 
         });
 
-        // --- ZAKUPY UMIEJĘTNOŚCI (FIX: STORMWIND + STROMGARDE) ---
+        // --- ZAKUPY UMIEJĘTNOŚCI (FIX: STORMWIND + STROMGARDE + GNOMY) ---
+        // --- ZAKUPY UMIEJĘTNOŚCI (FIX: WSZYSTKIE RASY) ---
         html.find('.skill-buy').click(ev => { 
             const key = $(ev.currentTarget).attr('data-key'); 
             const bonuses = this._getSkillBonuses();
@@ -527,36 +534,50 @@ export class CharacterCreator extends FormApplication {
             }
 
             const isCareer = this._isCareerSkill(key);
-            
-            // Pobieramy dane skilla, żeby sprawdzić kategorię
             const skillItem = this.loadedData.skills.find(s => s.name === key);
             const isCombat = skillItem && skillItem.system.category === "combat";
+            
+            // Definicje skilli rasowych (dla sprawdzenia nazw PL/ENG)
+            const isGnomeSkill = ["Alchemia", "Alchemy", "Mechanika", "Mechanics", "Mechanics (ENG)", "Alchemy (ENG)"].includes(key);
+            const isFelSkill = ["Przymus", "Coercion", "Odporność", "Resilience"].includes(key);
 
             let cost = 0;
             let isFreePurchase = false;
-            let freeType = null; // 'stormwind' lub 'stromgarde'
+            let freeType = null; // 'stormwind', 'stromgarde', 'gnome', 'fel'
 
-            // A. Czy to darmowa walka (Stromgarde)?
+            // A. Stromgarde (Walka)
             if (this.creationData.freeCombatMax > 0 &&
                 this.creationData.freeCombatUsed < this.creationData.freeCombatMax &&
                 isCombat &&
                 purchasedRank === 0) {
                 
-                cost = 0;
-                isFreePurchase = true;
-                freeType = 'stromgarde';
+                cost = 0; isFreePurchase = true; freeType = 'stromgarde';
             }
-            // B. Czy to darmowa nieklasowa (Stormwind)?
+            // B. GNOMY (Alchemia / Mechanika)
+            else if (this.creationData.freeGnomeSkillMax > 0 &&
+                this.creationData.freeGnomeSkillUsed < this.creationData.freeGnomeSkillMax &&
+                isGnomeSkill &&
+                purchasedRank === 0) {
+                
+                cost = 0; isFreePurchase = true; freeType = 'gnome';
+            }
+            // C. FEL ORC (Przymus / Odporność) - NOWOŚĆ
+            else if (this.creationData.freeFelSkillMax > 0 &&
+                this.creationData.freeFelSkillUsed < this.creationData.freeFelSkillMax &&
+                isFelSkill &&
+                purchasedRank === 0) {
+                
+                cost = 0; isFreePurchase = true; freeType = 'fel';
+            }
+            // D. Stormwind (Nieklasowe)
             else if (this.creationData.freeNonCareerMax > 0 && 
                 this.creationData.freeNonCareerUsed < this.creationData.freeNonCareerMax &&
                 !isCareer && 
                 purchasedRank === 0) {
                 
-                cost = 0;
-                isFreePurchase = true;
-                freeType = 'stormwind';
+                cost = 0; isFreePurchase = true; freeType = 'stormwind';
             }
-            // C. Standardowy zakup
+            // E. Standardowy zakup
             else {
                 cost = (totalRank + 1) * 5 + (isCareer ? 0 : 5);
             }
@@ -567,7 +588,7 @@ export class CharacterCreator extends FormApplication {
                 return; 
             }
 
-            // Aplikacja
+            // Aplikacja zmian
             this.creationData.skills[key] = purchasedRank + 1; 
             this.creationData.spentXP += cost;
 
@@ -576,6 +597,15 @@ export class CharacterCreator extends FormApplication {
                     this.creationData.freeCombatUsed++;
                     this.creationData.freeCombatList.push(key);
                     ui.notifications.info(`Wykorzystano darmową walkę dla: ${key}`);
+                } else if (freeType === 'gnome') {
+                    this.creationData.freeGnomeSkillUsed++;
+                    this.creationData.freeGnomeSkillList.push(key);
+                    ui.notifications.info(`Gnomia inwencja! Darmowa ranga dla: ${key}`);
+                } else if (freeType === 'fel') {
+                    // NOWOŚĆ - Zapisujemy wybór Orka
+                    this.creationData.freeFelSkillUsed++;
+                    this.creationData.freeFelSkillList.push(key);
+                    ui.notifications.info(`Wybrano drogę: ${key}`);
                 } else {
                     this.creationData.freeNonCareerUsed++;
                     this.creationData.freeNonCareerList.push(key);
@@ -586,7 +616,6 @@ export class CharacterCreator extends FormApplication {
             this.render(true); 
         });
 
-        // --- ZWROT UMIEJĘTNOŚCI (FIX: OBA TYPY) ---
         html.find('.skill-refund').click(ev => { 
             const key = $(ev.currentTarget).attr('data-key'); 
             const bonuses = this._getSkillBonuses();
@@ -599,17 +628,28 @@ export class CharacterCreator extends FormApplication {
                 ui.notifications.warn("To darmowa ranga z profesji."); return; 
             }
             
-            // Sprawdzenie, z której puli pochodzi skill (jeśli w ogóle)
+            // Sprawdzamy pule
             const stormwindIndex = this.creationData.freeNonCareerList ? this.creationData.freeNonCareerList.indexOf(key) : -1;
             const stromgardeIndex = this.creationData.freeCombatList ? this.creationData.freeCombatList.indexOf(key) : -1;
+            const gnomeIndex = this.creationData.freeGnomeSkillList ? this.creationData.freeGnomeSkillList.indexOf(key) : -1;
+            const felIndex = this.creationData.freeFelSkillList ? this.creationData.freeFelSkillList.indexOf(key) : -1; // NOWOŚĆ
 
-            // Zwracamy do puli TYLKO jeśli zjeżdżamy z rangi 1 na 0
+            // Warunki zwrotu do puli (tylko z rangi 1 na 0)
             const isStormwindReturn = stormwindIndex !== -1 && purchasedRank === 1;
             const isStromgardeReturn = stromgardeIndex !== -1 && purchasedRank === 1;
+            const isGnomeReturn = gnomeIndex !== -1 && purchasedRank === 1;
+            const isFelReturn = felIndex !== -1 && purchasedRank === 1; // NOWOŚĆ
 
             if (isStromgardeReturn) {
                 this.creationData.freeCombatUsed--;
                 this.creationData.freeCombatList.splice(stromgardeIndex, 1);
+            } else if (isGnomeReturn) {
+                this.creationData.freeGnomeSkillUsed--;
+                this.creationData.freeGnomeSkillList.splice(gnomeIndex, 1);
+            } else if (isFelReturn) {
+                // NOWOŚĆ - Zwrot do puli Orka
+                this.creationData.freeFelSkillUsed--;
+                this.creationData.freeFelSkillList.splice(felIndex, 1);
             } else if (isStormwindReturn) {
                 this.creationData.freeNonCareerUsed--;
                 this.creationData.freeNonCareerList.splice(stormwindIndex, 1);
@@ -624,8 +664,6 @@ export class CharacterCreator extends FormApplication {
             
             this.render(true); 
         });
-
-        // Reszta listenerów bez zmian
         html.find('.mot-input').change(ev => {
             const type = $(ev.currentTarget).data('type');
             const field = $(ev.currentTarget).data('field');
@@ -662,11 +700,14 @@ export class CharacterCreator extends FormApplication {
         const species = this.loadedData.races.find(r => r.id === id);
         if (!species) return;
         
-        // Reset danych
+        // 1. Reset podstawowych danych postaci
         this.creationData.speciesId = id;
+        // Kopiujemy atrybuty, żeby nie modyfikować oryginału w pamięci
         this.creationData.attributes = { ...(species.system?.characteristics || { brawn: 1, agility: 1, intellect: 1, cunning: 1, willpower: 1, presence: 1 }) };
         this.creationData.totalXP = species.system.startingXP || 100;
         this.creationData.spentXP = 0; 
+        
+        // Resetujemy umiejętności i talenty przy zmianie rasy
         this.creationData.skills = {}; 
         this.creationData.careerSkills = []; 
         this.creationData.purchasedTalents = [];
@@ -674,45 +715,67 @@ export class CharacterCreator extends FormApplication {
         // --- DIAGNOSTYKA SPECJALNYCH ZDOLNOŚCI ---
         console.group(`WARCRAFT MOD | Sprawdzanie zdolności rasy: ${species.name}`);
         
-        let hasFreeSkills = false; // Stormwind Humans
-        let hasCombatSkill = false; // Stromgarde (Dziedzictwo Arathi)
+        // Flagi dla logiki przyznawania bonusów
+        let hasFreeSkills = false;  // Stormwind (2 dowolne nieklasowe)
+        let hasCombatSkill = false; // Stromgarde (1 walka)
+        let hasGnomeSkill = false;  // Gnom (Alchemia/Mechanika)
+        let hasFelSkill = false;    // Fel Orc (Przymus/Odporność)
         
-        // Listy nazw do szukania
+        // Słowa kluczowe do szukania w opisach/nazwach
         const stormwindTerms = ["Starting Skills", "Początkowe Umiejętności", "Wszechstronność"];
         const stromgardeTerms = ["Dziedzictwo Arathi", "Legacy of Arathi"];
+        const gnomeTerms = ["rozwiązania tam, gdzie inni widzą problemy", "świat jest zagadką"];
+        const felTerms = ["przymus lub odporność", "droga dominacji, czy przetrwania"];
 
-        // Funkcja pomocnicza do szukania w itemach
+        // Funkcja pomocnicza przeszukująca listę przedmiotów
         const checkItems = (items) => {
             if (!items) return;
-            // Obsługa różnych formatów (tablica vs kolekcja)
+            // Obsługa różnych struktur danych Foundry (Array vs Collection)
             const list = Array.isArray(items) ? items : (items.contents || []);
             
             for (const item of list) {
                 const name = item.name.toLowerCase();
+                const desc = (item.system?.description?.value || item.system?.description || "").toLowerCase();
                 
-                // Sprawdzanie Stormwind
+                // A. Stormwind Humans
                 if (stormwindTerms.some(term => name.includes(term.toLowerCase()))) {
                     console.log(`%c   ✅ Stormwind Bonus: ${item.name}`, "color: green; font-weight: bold;");
                     hasFreeSkills = true;
                 }
                 
-                // Sprawdzanie Stromgarde
+                // B. Stromgarde Humans
                 if (stromgardeTerms.some(term => name.includes(term.toLowerCase()))) {
                     console.log(`%c   ✅ Stromgarde Bonus: ${item.name}`, "color: firebrick; font-weight: bold;");
                     hasCombatSkill = true;
                 }
+
+                // C. Gnomy
+                if (gnomeTerms.some(term => desc.includes(term.toLowerCase()))) {
+                    console.log(`%c   ✅ Gnom Bonus: ${item.name}`, "color: purple; font-weight: bold;");
+                    hasGnomeSkill = true;
+                }
+
+                // D. Fel Orcs (NOWOŚĆ)
+                if (felTerms.some(term => desc.includes(term.toLowerCase()))) {
+                    console.log(`%c   ✅ Fel Orc Bonus: ${item.name}`, "color: darkred; font-weight: bold;");
+                    hasFelSkill = true;
+                }
             }
         };
 
-        // 1. Sprawdź w grantedItems (Natywne)
-        checkItems(species.system.grantedItems);
-        // 2. Sprawdź w items (Legacy)
-        if (!hasFreeSkills && !hasCombatSkill) checkItems(species.items);
+        // 1. Sprawdź w grantedItems (Natywne dla nowych systemów)
+        if (species.grantedItems) checkItems(species.grantedItems);
+        else if (species.system?.grantedItems) checkItems(species.system.grantedItems);
+        
+        // 2. Sprawdź w items (Legacy / Fallback)
+        if (!hasFreeSkills && !hasCombatSkill && !hasGnomeSkill && !hasFelSkill) {
+            if (species.items) checkItems(species.items);
+        }
 
         console.groupEnd();
 
-        // Inicjalizacja liczników
-        
+        // --- INICJALIZACJA LICZNIKÓW I PUL ---
+
         // A. Stormwind (Dowolne nieklasowe)
         this.creationData.freeNonCareerMax = hasFreeSkills ? 2 : 0;
         this.creationData.freeNonCareerUsed = 0;
@@ -722,10 +785,21 @@ export class CharacterCreator extends FormApplication {
         this.creationData.freeCombatMax = hasCombatSkill ? 1 : 0;
         this.creationData.freeCombatUsed = 0;
         this.creationData.freeCombatList = [];
+        
+        // C. Gnomy (Alchemia / Mechanika)
+        this.creationData.freeGnomeSkillMax = hasGnomeSkill ? 1 : 0;
+        this.creationData.freeGnomeSkillUsed = 0;
+        this.creationData.freeGnomeSkillList = [];
+
+        // D. Fel Orcs (Przymus / Odporność) - NOWOŚĆ
+        this.creationData.freeFelSkillMax = hasFelSkill ? 1 : 0;
+        this.creationData.freeFelSkillUsed = 0;
+        this.creationData.freeFelSkillList = [];
 
         this.render(true);
     }
 
+    // --- FINALIZACJA POSTACI (DODAJE JEŹDZIECTWO) ---
     async _onFinish() {
         console.log("WARCRAFT MOD | Finalizowanie tworzenia postaci...");
         const actorId = this.actor.id;
@@ -738,14 +812,17 @@ export class CharacterCreator extends FormApplication {
         const raceItem = this.loadedData.races.find(r => r.id === d.speciesId);
         const specItem = this.loadedData.specializations.find(s => s.id === d.specId);
         const careerItem = this.loadedData.careers.find(c => c.id === d.careerId);
+        
+        // Zabezpieczenie na wypadek braku danych w itemie rasy
         const raceWounds = raceItem?.system.woundThreshold || 10;
         const raceStrain = raceItem?.system.strainThreshold || 10;
+        
         const xpEntries = [
             { amount: d.totalXP, type: "Starting", data: {} },
             { amount: -d.spentXP, type: "Spent", data: { name: "Kreator Postaci" } }
         ];
 
-        // Drzewko
+        // Drzewko (zapisujemy stan zakupionych talentów)
         let treeDataToSave = { nodes: {}, connections: {}, backgroundImage: "" };
         if (specItem) {
             const originalTree = specItem.getFlag("warcraft-genesys", "treeData") || specItem._source.flags?.["warcraft-genesys"]?.treeData;
@@ -758,7 +835,7 @@ export class CharacterCreator extends FormApplication {
             }
         }
 
-        // 2. UPDATE AKTORA
+        // 2. UPDATE AKTORA (Atrybuty, Rany, Stres, PD)
         const updates = {
             "name": d.charName,
             "flags.warcraft-genesys.characterCreated": true,
@@ -790,29 +867,34 @@ export class CharacterCreator extends FormApplication {
 
         await realActor.update(updates, { renderSheet: false });
 
-        // 3. TWORZENIE PRZEDMIOTÓW
+        // 3. TWORZENIE PRZEDMIOTÓW (Rasa, Klasa, Talenty, Ekwipunek)
         const itemsToCreate = [];
         
         // A. RASA I ZDOLNOŚCI
         if (raceItem) {
             itemsToCreate.push(raceItem.toObject());
 
+            // Pobieranie itemów rasy (obsługa grantedItems i fallback do items)
             let racialItems = [];
-            if (raceItem.system.grantedItems && Array.isArray(raceItem.system.grantedItems)) {
-                racialItems = raceItem.system.grantedItems;
-            } else if (raceItem.items && raceItem.items.size > 0) {
-                racialItems = raceItem.items.contents;
+            if (raceItem.grantedItems) racialItems = raceItem.grantedItems;
+            else if (raceItem.system?.grantedItems) racialItems = raceItem.system.grantedItems;
+            else if (raceItem.items) {
+                 if (raceItem.items.contents) racialItems = raceItem.items.contents;
+                 else if (Array.isArray(raceItem.items)) racialItems = raceItem.items;
             }
 
             if (racialItems.length > 0) {
                 racialItems.forEach(item => {
                     let itemData = (typeof item.toObject === 'function') ? item.toObject() : foundry.utils.deepClone(item);
 
-                    // --- GENEROWANIE EFEKTÓW ---
+                    // --- GENEROWANIE EFEKTÓW (Active Effects) ---
                     const itemName = itemData.name.toLowerCase();
+                    // Pobieramy opis do detekcji (bezpiecznie)
+                    const descLower = (itemData.system.description?.value || itemData.system.description || "").toLowerCase();
+                    
                     const newEffects = [];
 
-                    // 1. Stormwind Humans ("Wszechstronność" etc.)
+                    // 1. Stormwind Humans ("Wszechstronność")
                     const isStormwind = ["starting skills", "początkowe umiejętności", "wszechstronność"].some(t => itemName.includes(t));
                     
                     if (isStormwind && d.freeNonCareerList?.length > 0) {
@@ -840,6 +922,36 @@ export class CharacterCreator extends FormApplication {
                         });
                     }
 
+                    // 3. GNOMY ("Świat jest zagadką...")
+                    // Szukamy po frazie w opisie, bo nazwa zdolności może być różna
+                    const isGnome = ["rozwiązania tam, gdzie inni widzą problemy", "świat jest zagadką"].some(t => descLower.includes(t));
+
+                    if (isGnome && d.freeGnomeSkillList?.length > 0) {
+                        d.freeGnomeSkillList.forEach(skillName => {
+                            newEffects.push({
+                                name: `Gnomia Specjalizacja: ${skillName}`,
+                                icon: itemData.img,
+                                changes: [{ key: `skill.${skillName}`, mode: 2, value: "1" }],
+                                transfer: true, disabled: false
+                            });
+                        });
+                    }
+
+                    const isFel = descLower.includes("przymus (coercion) lub odporność (resilience)") || descLower.includes("dominacji, czy przetrwania");
+
+                    if (isFel && d.freeFelSkillList?.length > 0) {
+                        d.freeFelSkillList.forEach(skillName => {
+                            newEffects.push({
+                                name: `Wybrana Droga: ${skillName}`,
+                                icon: itemData.img,
+                                // Dodajemy rangę (+1 Rank)
+                                changes: [{ key: `skill.${skillName}.rank`, mode: 2, value: "1" }],
+                                transfer: true, disabled: false
+                            });
+                        });
+                    }
+
+                    // Dodajemy efekty do przedmiotu, jeśli jakieś wygenerowano
                     if (newEffects.length > 0) {
                         console.log(`WARCRAFT MOD | Dodaję ${newEffects.length} efektów do ${itemData.name}`);
                         itemData.effects = (itemData.effects || []).concat(newEffects);
@@ -860,7 +972,7 @@ export class CharacterCreator extends FormApplication {
             itemsToCreate.push(specObject);
         }
 
-        // D. KUPIONE TALENTY
+        // D. KUPIONE TALENTY Z DRZEWKA
         for (const uniqueId of d.purchasedTalents) {
             const [specId, nodeKey] = uniqueId.split('_');
             if (specItem && specItem.id === specId) {
@@ -880,12 +992,15 @@ export class CharacterCreator extends FormApplication {
         for (const [skillName, rank] of Object.entries(d.skills)) {
             let finalRank = rank;
 
-            // Sprawdzamy czy skill jest darmowy (w którejś z list)
+            // Sprawdzamy czy skill jest darmowy (w którejś z list bonusowych)
             const isFreeStormwind = d.freeNonCareerList && d.freeNonCareerList.includes(skillName);
             const isFreeStromgarde = d.freeCombatList && d.freeCombatList.includes(skillName);
+            const isFreeGnome = d.freeGnomeSkillList && d.freeGnomeSkillList.includes(skillName);
+            const isFreeFel = d.freeFelSkillList && d.freeFelSkillList.includes(skillName);
 
-            // Jeśli jest darmowy, odejmujemy 1 od bazy (bo Active Effect doda +1)
-            if (isFreeStormwind || isFreeStromgarde) {
+            // Jeśli jest darmowy, odejmujemy 1 od bazy (bo Active Effect na Zdolności doda +1)
+            // Dzięki temu Ranga 1 = 0 (baza) + 1 (efekt), a Ranga 2 = 1 (baza) + 1 (efekt).
+            if (isFreeStormwind || isFreeStromgarde || isFreeGnome || isFreeFel) {
                 finalRank = rank - 1;
             }
 
@@ -901,6 +1016,12 @@ export class CharacterCreator extends FormApplication {
                     skillData.system.rank = finalRank;
                     skillData.system.career = isCareer;
                     itemsToCreate.push(skillData);
+                } else {
+                    // Fallback jeśli skilla nie ma w kompendium (rzadkie)
+                    itemsToCreate.push({
+                        name: skillName, type: "skill",
+                        system: { rank: finalRank, career: isCareer }
+                    });
                 }
             }
         }
@@ -912,11 +1033,11 @@ export class CharacterCreator extends FormApplication {
         ui.notifications.info(`Postać ${d.charName} została utworzona!`);
         this.close();
 
+        // Odświeżenie karty postaci po chwili
         setTimeout(async () => {
             const freshActor = game.actors.get(this.actor.id);
             if (freshActor) {
-                if (freshActor.sheet.rendered) freshActor.sheet.render(true);
-                else freshActor.sheet.render(true);
+                freshActor.sheet.render(true);
             }
         }, 500);
     }

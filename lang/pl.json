@@ -73,6 +73,7 @@
       "Duration": "Czas trwania",
       "Miscellaneous": "Różne"
     },
+    
     "Characteristics": {
       "Brawn": "Krzepa",
       "Agility": "Zwinność",
@@ -326,6 +327,29 @@
     },
     "CombatTracker": {
       "RevokeInitiativeClaim": "Odwołaj przejęcie inicjatywy"
+    },
+
+
+    "Genesys": {
+    "Rolls": {
+      "Results": "Wyniki Rzutu",
+      "Dice": "Pula Kości",
+      "Summary": {
+        "Label": "Podsumowanie",
+        "Successes": "Sukcesy",
+        "Failures": "Porażki",
+        "Advantage": "Przewagi",
+        "Threat": "Zagrożenia",
+        "Triumph": "Triumfy",
+        "Despair": "Katastrofy"
+      },
+      "Attack": {
+        "Label": "Skuteczność Ataku",
+        "Damage": "Obrażenia",
+        "Critical": "Krytyk",
+        "Qualities": "Właściwości Broni"
+      }
+    },
+    "Tooltips": {
+      "NoDescription": "Brak dodatkowego opisu"
     }
-  }
-}

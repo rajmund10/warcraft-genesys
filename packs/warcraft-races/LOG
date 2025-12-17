@@ -1,5 +1,3 @@
-2025/12/06-18:20:57.160 1c9c Recovering log #98
-2025/12/06-18:20:57.160 1c9c Level-0 table #100: started
-2025/12/06-18:20:57.165 1c9c Level-0 table #100: 873 bytes OK
-2025/12/06-18:20:57.168 1c9c Delete type=0 #98
-2025/12/06-18:20:57.169 1c9c Delete type=3 #97
+2025/12/17-18:29:57.335 3edc Recovering log #157
+2025/12/17-18:29:57.338 3edc Delete type=0 #157
+2025/12/17-18:29:57.338 3edc Delete type=3 #156

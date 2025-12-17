@@ -30,7 +30,7 @@ Hooks.once('init', () => {
             { title: "🟣 Trudność (d)",    code: "@dice[D]" },
             { title: "🔴 Wyzwanie (c)",    code: "@dice[C]" },
             { title: "🟦 Wzmocnienie (b)", code: "@dice[B]" },
-            { title: "⬛ Komplikacja (s)",  code: "@dice[S]" },
+            { title: "⬛ Komplikacja (s)", code: "@dice[S]" },
             { title: "✅ Sukces (s)",      code: "@sym[s]" },
             { title: "❌ Porażka (f)",     code: "@sym[f]" },
             { title: "⬆️ Przewaga (a)",    code: "@sym[a]" },
@@ -332,3 +332,88 @@ Hooks.on("dropItemSheetData", async (targetItem, sheet, dropData) => {
 Hooks.on("createActiveEffect", triggerRecalculation);
 Hooks.on("deleteActiveEffect", triggerRecalculation);
 Hooks.on("updateActiveEffect", triggerRecalculation);
+
+// =============================================================================
+// --- WARCRAFT GENESYS: GLOBALNY FIX TOOLTIPÓW (INTERCEPTOR) ---
+// =============================================================================
+
+Hooks.once("ready", () => {
+    console.log("WARCRAFT MOD | 🛡️ Uruchamianie Globalnego Interceptora Tooltipów...");
+
+    // Mapa symboli (zgodna z Twoim CSS)
+    const SYMBOLS = {
+        "a": "ability", "p": "proficiency", "d": "difficulty", "c": "challenge",
+        "b": "boost", "s": "setback", "f": "failure", "h": "threat",
+        "t": "triumph", "r": "despair"
+    };
+
+    // Element dymka w Foundry
+    const tooltipEl = document.getElementById("tooltip");
+
+    if (!tooltipEl) {
+        console.warn("WARCRAFT MOD | ⚠️ Nie znaleziono elementu #tooltip. Fix może nie działać.");
+        return;
+    }
+
+    // Funkcja czyszcząca tekst
+    const cleanContent = (originalText) => {
+        let text = originalText;
+        
+        // 1. Jeśli tekst jest pusty, nic nie rób
+        if (!text) return text;
+
+        // 2. Dekodowanie encji HTML (np. &lt;p&gt;)
+        if (text.includes("&lt;")) {
+            const txt = document.createElement("textarea");
+            txt.innerHTML = text;
+            text = txt.value;
+        }
+
+        // 3. Sprawdź czy wymaga naprawy (ma tagi P lub kody @dice/@sym)
+        if (!text.includes("<p>") && !text.includes("@dice") && !text.includes("@sym")) {
+            return null; // Zwracamy null, jeśli tekst jest OK (żeby nie pętlić)
+        }
+
+        // 4. Usuwanie <p> i </p>
+        if (text.startsWith("<p>") && text.endsWith("</p>")) {
+            text = text.slice(3, -4);
+        }
+
+        // 5. Zamiana @dice[x] na HTML
+        text = text.replace(/@(dice|sym)\[([a-zA-Z])\]/g, (match, type, code) => {
+            const key = code.toLowerCase();
+            const cssClass = SYMBOLS[key];
+            return cssClass ? `<span class='genesys-pm-icon ${cssClass}'></span>` : match;
+        });
+
+        // 6. Fix cudzysłowów (dla bezpieczeństwa HTML)
+        text = text.replace(/"/g, "'");
+
+        return text;
+    };
+
+    // OBSERWATOR ZMIAN
+    // Patrzymy, kiedy Foundry zmienia tekst w dymku
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            // Reagujemy tylko na zmianę listy dzieci (czyli zmianę tekstu w środku)
+            if (mutation.type === "childList") {
+                const currentHTML = tooltipEl.innerHTML;
+                
+                // Unikamy pętli nieskończonej: sprawdzamy, czy tekst wymaga czyszczenia
+                const cleanHTML = cleanContent(currentHTML);
+
+                if (cleanHTML && cleanHTML !== currentHTML) {
+                    // Wyłączamy obserwatora na moment zmiany, żeby nie wykrył naszej zmiany
+                    observer.disconnect();
+                    tooltipEl.innerHTML = cleanHTML;
+                    // Włączamy z powrotem
+                    observer.observe(tooltipEl, { childList: true, subtree: true });
+                }
+            }
+        });
+    });
+
+    // Start obserwacji globalnego dymka
+    observer.observe(tooltipEl, { childList: true, subtree: true });
+});

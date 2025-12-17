@@ -24,14 +24,34 @@
         <div class="step-container">
             <h3>Wybierz Pochodzenie</h3>
             
-            <div class="dropdown-container">
-                <label>Dostępne Rasy:</label>
-                <select class="species-dropdown">
-                    <option value="" disabled {{#unless state.speciesId}}selected{{/unless}}>-- Wybierz rasę z listy --</option>
-                    {{#each races as |r|}}
-                    <option value="{{r.id}}" {{#if (eq ../state.speciesId r.id)}}selected{{/if}}>{{r.name}}</option>
-                    {{/each}}
-                </select>
+            {{!-- DWUSTOPNIOWY WYBÓR RASY --}}
+            <div class="dropdown-container" style="display: flex; gap: 10px; align-items: flex-end;">
+                
+                {{!-- 1. GRUPA (np. Człowiek, Krasnolud) --}}
+                <div style="flex: 1;">
+                    <label>Typ Rasy:</label>
+                    <select class="race-group-select" style="width: 100%;">
+                        <option value="" disabled {{#unless state.raceGroup}}selected{{/unless}}>-- Wybierz typ --</option>
+                        {{#each raceGroups}}
+                        <option value="{{this}}" {{#if (eq ../state.raceGroup this)}}selected{{/if}}>{{this}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+
+                {{!-- 2. WARIANT (np. Stormwind, Ironforge) --}}
+                <div style="flex: 1;">
+                    <label>Wariant / Klan:</label>
+                    <select class="species-dropdown" style="width: 100%;" {{#unless state.raceGroup}}disabled{{/unless}}>
+                        <option value="" disabled {{#unless state.speciesId}}selected{{/unless}}>
+                            {{#if state.raceGroup}}-- Wybierz wariant --{{else}}-- Najpierw wybierz typ --{{/if}}
+                        </option>
+                        
+                        {{#each availableSubRaces}}
+                        <option value="{{this.id}}" {{#if (eq ../state.speciesId this.id)}}selected{{/if}}>{{this.name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+
             </div>
 
             <hr style="border: 0; border-bottom: 1px solid var(--wow-brown-light); margin: 15px 0;">
@@ -43,11 +63,22 @@
                     </div>
 
                     <div class="species-flex-container">
+                        
+                        {{!-- LEWA KOLUMNA: PORTRET --}}
                         <div class="species-portrait-col">
                             <img src="{{raceImage}}" alt="{{currentSpecies.name}}">
                         </div>
 
+                        {{!-- PRAWA KOLUMNA: TREŚĆ --}}
                         <div class="species-content-col">
+                            
+                            {{!-- 1. OPIS RASY (NA GÓRZE) --}}
+                            <div class="desc-header" style="margin-top: 0;">Opis Rasy</div>
+                            <div class="desc-box custom-scroll" style="margin-bottom: 15px; max-height: 250px;">
+                                {{{enrichedRaceDescription}}}
+                            </div>
+
+                            {{!-- 2. CECHY (CHARACTERISTICS) --}}
                             <div class="characteristics-row">
                                 <div class="char-box"><div class="char-label">Budowa</div><div class="char-value">{{currentSpecies.system.characteristics.brawn}}</div></div>
                                 <div class="char-box"><div class="char-label">Zwinność</div><div class="char-value">{{currentSpecies.system.characteristics.agility}}</div></div>
@@ -57,12 +88,14 @@
                                 <div class="char-box"><div class="char-label">Ogłada</div><div class="char-value">{{currentSpecies.system.characteristics.presence}}</div></div>
                             </div>
 
+                            {{!-- 3. STATYSTYKI POCHODNE --}}
                             <div class="derived-row">
                                 <div class="derived-box"><label>Rany</label><div class="val">{{currentSpecies.system.woundThreshold}} + Bud</div></div>
                                 <div class="derived-box"><label>Stres</label><div class="val">{{currentSpecies.system.strainThreshold}} + SW</div></div>
                                 <div class="derived-box xp"><label>Początkowe PD</label><div class="val">{{currentSpecies.system.startingXP}}</div></div>
                             </div>
 
+                            {{!-- 4. ZDOLNOŚCI RASOWE --}}
                             {{#if racialAbilities.length}}
                                 <div class="desc-header" style="margin-top: 15px;">Zdolności Rasowe</div>
                                 <div class="racial-abilities-list" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
@@ -86,20 +119,21 @@
                                 </div>
                             {{/if}}
 
-                            <div class="desc-header">Opis Rasy</div>
-                            <div class="desc-box custom-scroll">
-                                {{{enrichedRaceDescription}}}
-                            </div>
                         </div>
                     </div>
                 {{else}}
                     <div class="placeholder-msg">
-                        <i class="fas fa-hand-point-up"></i> Wybierz rasę z listy powyżej.
+                        <i class="fas fa-hand-point-up"></i> 
+                        {{#if state.raceGroup}}
+                            Wybierz wariant rasy z listy.
+                        {{else}}
+                            Wybierz typ rasy, aby rozpocząć.
+                        {{/if}}
                     </div>
                 {{/if}}
             </div>
         </div>
-        {{/if}}
+{{/if}}
 
         {{#if isStep2}}
         <div class="step-container">
@@ -240,6 +274,27 @@
                         <div class="xp-val" style="color: #fff; font-size: 16px;">
                             {{state.freeCombatUsed}} / {{state.freeCombatMax}}
                         </div>
+                    </div>
+                    {{/if}}
+
+                    {{!-- Bloczek Gnomów --}}
+                    {{#if (gt state.freeGnomeSkillMax 0)}}
+                    <div class="xp-budget" style="margin-bottom: 15px; border: 1px solid #9c27b0; background: rgba(156, 39, 176, 0.15); padding: 5px;">
+                        <label style="color: #ce93d8; font-size: 11px;">Gnomia Specjalizacja (Alch/Mech)</label>
+                        <div class="xp-val" style="color: #fff; font-size: 16px;">
+                            {{state.freeGnomeSkillUsed}} / {{state.freeGnomeSkillMax}}
+                        </div>
+                    </div>
+                    {{/if}}
+
+                    {{!-- Bloczek Fel Orca --}}
+                    {{#if (gt state.freeFelSkillMax 0)}}
+                    <div class="xp-budget" style="margin-bottom: 15px; border: 1px solid #b71c1c; background: rgba(183, 28, 28, 0.15); padding: 5px;">
+                        <label style="color: #ef9a9a; font-size: 11px;">Dominacja / Przetrwanie</label>
+                        <div class="xp-val" style="color: #fff; font-size: 16px;">
+                            {{state.freeFelSkillUsed}} / {{state.freeFelSkillMax}}
+                        </div>
+                        <div style="font-size: 9px; color: #ccc; margin-top:3px;">(Przymus lub Odporność)</div>
                     </div>
                     {{/if}}
                     
