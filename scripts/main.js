@@ -2,62 +2,254 @@ import { SpecializationSheet } from "./specialization-sheet.js";
 import { TalentTreeManager } from "./tree-manager.js";
 import { MagicManager } from "./magic-manager.js";
 
-// --- 1. WYCISZANIE BŁĘDÓW ---
-const ignoreErrors = ["ResizeObserver loop", "loop limit exceeded", "loop completed"];
-window.addEventListener('error', e => {
-    if (e.message && ignoreErrors.some(msg => e.message.includes(msg))) {
-        e.stopImmediatePropagation(); e.preventDefault();
+// =============================================================================
+// --- 0. KONFIGURACJA ŚCIEŻEK (Pełne ścieżki modułowe) ---
+// =============================================================================
+const MODULE_ID = "warcraft-genesys"; // ID z module.json
+const BASE_PATH = `modules/${MODULE_ID}/assets/dice/`;
+
+const DICE_IMAGES = {
+    "Boost": { // Niebieska
+        "":  BASE_PATH + "blue.png",
+        "s": BASE_PATH + "blues.png",
+        "sa": BASE_PATH + "bluesa.png",
+        "aa": BASE_PATH + "blueaa.png",
+        "a": BASE_PATH + "bluea.png"
+    },
+    "Ability": { // Zielona
+        "": BASE_PATH + "green.png",
+        "s": BASE_PATH + "greens.png",
+        "ss": BASE_PATH + "greenss.png",
+        "a": BASE_PATH + "greena.png",
+        "aa": BASE_PATH + "greenaa.png",
+        "sa": BASE_PATH + "greensa.png"
+    },
+    "Proficiency": { // Żółta
+        "": BASE_PATH + "yellow.png",
+        "s": BASE_PATH + "yellows.png",
+        "ss": BASE_PATH + "yellowss.png",
+        "a": BASE_PATH + "yellowa.png",
+        "aa": BASE_PATH + "yellowaa.png",
+        "sa": BASE_PATH + "yellowsa.png",
+        "t": BASE_PATH + "yellowt.png"
+    },
+    "Setback": { // Czarna
+        "": BASE_PATH + "black.png",
+        "f": BASE_PATH + "blackf.png",
+        "h": BASE_PATH + "blackh.png" 
+    },
+    "Difficulty": { // Fioletowa
+        "": BASE_PATH + "purple.png",
+        "f": BASE_PATH + "purplef.png",
+        "ff": BASE_PATH + "purpleff.png",
+        "h": BASE_PATH + "purpleh.png",   
+        "hh": BASE_PATH + "purplehh.png", 
+        "fh": BASE_PATH + "purplefh.png"  
+    },
+    "Challenge": { // Czerwona
+        "": BASE_PATH + "red.gif", 
+        "f": BASE_PATH + "redf.png",
+        "ff": BASE_PATH + "redff.png",
+        "h": BASE_PATH + "redh.png",   
+        "hh": BASE_PATH + "redhh.png", 
+        "fh": BASE_PATH + "redfh.png", 
+        "d": BASE_PATH + "redd.png"    
     }
-}, { capture: true });
+};
 
-// --- 2. INICJALIZACJA ---
-Hooks.once('init', () => {
-    console.log("WARCRAFT MOD | Inicjalizacja modułu...");
-
-    // --- PROSEMIRROR: Menu Symboli (Emoji) ---
-    Hooks.on("getProseMirrorMenuDropDowns", (menu, dropdowns) => {
-        const insertText = (view, text) => {
-            const { state, dispatch } = view;
-            const tr = state.tr.insertText(text);
-            dispatch(tr);
-            view.focus();
-            return true;
-        };
-
-        const symbolData = [
-            { title: "🟢 Zdolność (k)",    code: "@dice[A]" },
-            { title: "🟡 Biegłość (l)",    code: "@dice[P]" },
-            { title: "🟣 Trudność (d)",    code: "@dice[D]" },
-            { title: "🔴 Wyzwanie (c)",    code: "@dice[C]" },
-            { title: "🟦 Wzmocnienie (b)", code: "@dice[B]" },
-            { title: "⬛ Komplikacja (s)", code: "@dice[S]" },
-            { title: "✅ Sukces (s)",      code: "@sym[s]" },
-            { title: "❌ Porażka (f)",     code: "@sym[f]" },
-            { title: "⬆️ Przewaga (a)",    code: "@sym[a]" },
-            { title: "⬇️ Zagrożenie (h)",  code: "@sym[h]" },
-            { title: "☀️ Triumf (t)",      code: "@sym[t]" },
-            { title: "💀 Rozpacz (y)",     code: "@sym[d]" }
-        ];
-
-        const entries = symbolData.map(item => ({
-            action: item.title,
-            title: item.title,
-            cmd: (state, dispatch, view) => insertText(view, item.code)
-        }));
-
-        dropdowns['genesys-symbols'] = {
-            title: "Symbole Genesys",
-            cssClass: "genesys-selector",
-            icon: '<i class="fas fa-dice" style="color:var(--color-text-light)"></i>', 
-            entries: entries
-        };
-    });
-});
-
-// --- 3. START SYSTEMU (Ready) ---
+// =============================================================================
+// --- 1. START SYSTEMU ---
+// =============================================================================
 Hooks.once('ready', () => {
     console.log("WARCRAFT MOD | Start systemu (Ready)...");
+
+    // --- A. MUTATION OBSERVER (Wykrywanie nowych wiadomości w czasie rzeczywistym) ---
+    const chatLog = document.getElementById("chat-log");
+    if (chatLog) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element HTML
+                        const $node = $(node);
+                        if ($node.hasClass('chat-message') || $node.find('.chat-message').length > 0) {
+                            // Opóźnienie minimalne, by upewnić się, że Vue wyrenderowało wnętrze
+                            setTimeout(() => processChatMessage($node), 10);
+                        }
+                    }
+                });
+            });
+        });
+        observer.observe(chatLog, { childList: true, subtree: true });
+    }
+
+    // Konfiguracja arkuszy (z poprzedniego pliku)
+    setupSheetsAndModels();
+});
+
+// Standardowy Hook (dla pewności przy odświeżaniu F5)
+Hooks.on("renderChatMessage", (message, html, data) => {
+    setTimeout(() => {
+        processChatMessage(html);
+    }, 50);
+});
+
+// =============================================================================
+// --- 2. GŁÓWNA LOGIKA PRZETWARZANIA CZATU ---
+// =============================================================================
+
+function processChatMessage(html) {
+    const rollContainer = html.find('.roll-skill');
+    if (rollContainer.length === 0) return;
+
+    // 1. Zastąp kości systemowe naszymi obrazkami (METODA TOTALNEJ PODMIANY)
+    replaceDiceContainer(rollContainer);
+
+    // 2. Przesuń kości na górę
+    const diceRow = rollContainer.find('.dice-row');
+    if (diceRow.length > 0 && rollContainer.children().first()[0] !== diceRow[0]) {
+        rollContainer.prepend(diceRow);
+    }
+
+    // 3. Dodaj kartę broni (jeśli to atak)
+    // Pobieramy wiadomość z ID elementu HTML
+    const messageId = html.data("messageId");
+    const message = game.messages.get(messageId);
+    if (message) {
+        injectWeaponStats(message, rollContainer);
+    }
+}
+
+function replaceDiceContainer(container) {
+    // Znajdź oryginalny kontener z kośćmi
+    const diceDiv = container.find('.dice');
+    if (diceDiv.length === 0) return;
     
+    // Jeśli już podmieniliśmy (ma naszą klasę), to kończymy
+    if (diceDiv.hasClass('warcraft-replaced')) return;
+
+    let newDiceHtml = "";
+    let diceFound = false;
+
+    // Iterujemy po starych kostkach, żeby wyciągnąć dane
+    diceDiv.find('.result').each((i, el) => {
+        const resultEl = $(el);
+        
+        // Pobierz Typ i Symbol ze starego HTML
+        // System Genesys trzyma to w atrybutach data-type
+        const typeEl = resultEl.find('.type');
+        const faceEl = resultEl.find('.face');
+        
+        let rawType = typeEl.attr('data-type') || faceEl.attr('data-type');
+        if (!rawType) return;
+
+        let dieType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase(); // np. "Ability"
+        let symbolText = faceEl.text().trim();
+
+        // Znajdź obrazek
+        if (DICE_IMAGES[dieType]) {
+            let imagePath = DICE_IMAGES[dieType][symbolText];
+            // Fallback dla pustej ścianki
+            if (!symbolText && DICE_IMAGES[dieType][""] !== undefined) {
+                imagePath = DICE_IMAGES[dieType][""];
+            }
+
+            if (imagePath) {
+                // Budujemy prosty HTML z obrazkiem
+                newDiceHtml += `
+                    <div class="warcraft-die">
+                        <img src="${imagePath}" title="${dieType}: ${symbolText}" />
+                    </div>
+                `;
+                diceFound = true;
+            }
+        }
+    });
+
+    if (diceFound) {
+        // --- TOTALNA PODMIANA ---
+        // Czyścimy stary kontener .dice i wstawiamy nasz nowy HTML
+        diceDiv.html(newDiceHtml);
+        
+        // Dodajemy klasę, żeby oznaczyć jako zrobione i nadać style flexboxa
+        diceDiv.addClass('warcraft-replaced');
+        
+        // Nadpisujemy style inline kontenera, żeby zresetować marginy/paddingi systemowe
+        diceDiv.css({
+            "display": "flex",
+            "flex-wrap": "wrap",
+            "gap": "5px",
+            "align-items": "center",
+            "padding": "5px"
+        });
+        
+        // Logujemy sukces (widoczne pod F12)
+        console.log("WARCRAFT MOD | Kości podmienione na obrazki.");
+    }
+}
+
+function injectWeaponStats(message, container) {
+    if (container.find('.warcraft-weapon-injector').length > 0) return;
+
+    let actor = message.speaker?.actor ? game.actors.get(message.speaker.actor) : null;
+    if (!actor && message.speaker?.token) {
+        const token = canvas.tokens.get(message.speaker.token);
+        if (token) actor = token.actor;
+    }
+    if (!actor) return;
+
+    const flavorText = (message.flavor || "").toLowerCase();
+    const contentText = (message.content || "").toLowerCase();
+    
+    const item = actor.items.find(i => 
+        ["weapon", "vehicleWeapon"].includes(i.type) &&
+        (flavorText.includes(i.name.toLowerCase()) || contentText.includes(i.name.toLowerCase()))
+    );
+
+    if (!item) return;
+
+    let successes = 0;
+    if (message.rolls && message.rolls.length > 0) {
+        const r = message.rolls[0];
+        // Próba bezpiecznego pobrania sukcesów
+        if (r.results && r.results.netSuccess !== undefined) successes = r.results.netSuccess;
+        else if (r.total !== undefined) successes = r.total;
+    } 
+
+    const isSuccess = successes > 0;
+    const baseDamage = parseInt(item.system.damage) || 0;
+    const totalDamage = isSuccess ? (baseDamage + successes) : baseDamage; 
+    const critical = item.system.critical || "-";
+
+    let qualities = item.system.qualities || "";
+    if (typeof qualities !== 'string' && Array.isArray(qualities)) {
+        qualities = qualities.map(q => `${q.name} ${q.rating || ''}`).join(", ");
+    }
+
+    const cardHtml = `
+    <div class="warcraft-weapon-injector" style="margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.2); padding-top: 5px;">
+        <div class="wc-attack-stats flexrow" style="display:flex; justify-content: space-around; text-align: center; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 4px;">
+            <div class="wc-stat-damage">
+                <span class="wc-stat-label" style="display:block; font-size:10px; text-transform:uppercase; opacity:0.8;">Obrażenia</span>
+                <span class="wc-stat-value" style="font-size:18px; font-weight: bold; color: ${isSuccess ? 'darkred' : 'grey'};">
+                    ${totalDamage} <span style="font-size:10px; color:#555;">(${baseDamage}+${isSuccess ? successes : 0})</span>
+                </span>
+            </div>
+            <div class="wc-stat-critical">
+                <span class="wc-stat-label" style="display:block; font-size:10px; text-transform:uppercase; opacity:0.8;">Krytyk</span>
+                <span class="wc-stat-value" style="font-size:18px; font-weight: bold; color: #a48b5e;">${critical}</span>
+            </div>
+        </div>
+        ${qualities ? `<div style="font-size:11px; margin-top:5px; font-style:italic; text-align:center; color:#555; border-top: 1px dashed #ccc; padding-top:2px;">${qualities}</div>` : ""}
+    </div>
+    `;
+
+    container.append(cardHtml);
+}
+
+// =============================================================================
+// --- 3. KONFIGURACJA ARKUSZY I MODELI (RESZTA KODU) ---
+// =============================================================================
+function setupSheetsAndModels() {
     class SpecializationDataModel extends foundry.abstract.DataModel {
         static defineSchema() {
             const fields = foundry.data.fields;
@@ -68,6 +260,7 @@ Hooks.once('ready', () => {
 
     Handlebars.registerHelper('includes', (arr, val) => Array.isArray(arr) && arr.includes(val));
 
+    // Rejestracja Arkusza Postaci
     const sheetConfig = CONFIG.Actor.sheetClasses.character;
     if (sheetConfig) {
         const sheetEntry = Object.values(sheetConfig).find(s => s.default) || Object.values(sheetConfig)[0];
@@ -136,6 +329,7 @@ Hooks.once('ready', () => {
 
     Items.registerSheet("genesys", SpecializationSheet, { types: ["specialization"], makeDefault: true, label: "Edytor Specjalizacji (Warcraft)" });
 
+    // Portrety i inne Hooki UI
     Hooks.on("getItemSheetHeaderButtons", (sheet, buttons) => {
         if (["archetype", "career"].includes(sheet.document.type)) {
             buttons.unshift({
@@ -174,246 +368,164 @@ Hooks.once('ready', () => {
                 }
             }
         }
-        
         const editors = html.find('.editor, .prosemirror, .editor-content');
         if (editors.length > 0) {
             editors.on('mousedown', (ev) => { ev.stopPropagation(); });
         }
     });
 
-    console.log("WARCRAFT MOD | Gotowy.");
+    // Fix Tooltipów (ProseMirror)
+    const SYMBOLS = {
+        "a": "ability", "p": "proficiency", "d": "difficulty", "c": "challenge",
+        "b": "boost", "s": "setback", "f": "failure", "h": "threat",
+        "t": "triumph", "r": "despair"
+    };
+    const tooltipEl = document.getElementById("tooltip");
+    if (tooltipEl) {
+        const cleanContent = (originalText) => {
+            let text = originalText;
+            if (!text) return text;
+            if (text.includes("&lt;")) {
+                const txt = document.createElement("textarea");
+                txt.innerHTML = text;
+                text = txt.value;
+            }
+            if (!text.includes("<p>") && !text.includes("@dice") && !text.includes("@sym")) return null;
+            if (text.startsWith("<p>") && text.endsWith("</p>")) text = text.slice(3, -4);
+            text = text.replace(/@(dice|sym)\[([a-zA-Z])\]/g, (match, type, code) => {
+                const key = code.toLowerCase();
+                const cssClass = SYMBOLS[key];
+                return cssClass ? `<span class='genesys-pm-icon ${cssClass}'></span>` : match;
+            });
+            text = text.replace(/"/g, "'");
+            return text;
+        };
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === "childList") {
+                    const currentHTML = tooltipEl.innerHTML;
+                    const cleanHTML = cleanContent(currentHTML);
+                    if (cleanHTML && cleanHTML !== currentHTML) {
+                        observer.disconnect();
+                        tooltipEl.innerHTML = cleanHTML;
+                        observer.observe(tooltipEl, { childList: true, subtree: true });
+                    }
+                }
+            });
+        });
+        observer.observe(tooltipEl, { childList: true, subtree: true });
+    }
+}
+
+// Inicjalizacja Menu Symboli (ProseMirror)
+Hooks.once('init', () => {
+    Hooks.on("getProseMirrorMenuDropDowns", (menu, dropdowns) => {
+        const insertText = (view, text) => {
+            const { state, dispatch } = view;
+            const tr = state.tr.insertText(text);
+            dispatch(tr);
+            view.focus();
+            return true;
+        };
+        const symbolData = [
+            { title: "🟢 Zdolność (k)",    code: "@dice[A]" },
+            { title: "🟡 Biegłość (l)",    code: "@dice[P]" },
+            { title: "🟣 Trudność (d)",    code: "@dice[D]" },
+            { title: "🔴 Wyzwanie (c)",    code: "@dice[C]" },
+            { title: "🟦 Wzmocnienie (b)", code: "@dice[B]" },
+            { title: "⬛ Komplikacja (s)", code: "@dice[S]" },
+            { title: "✅ Sukces (s)",      code: "@sym[s]" },
+            { title: "❌ Porażka (f)",     code: "@sym[f]" },
+            { title: "⬆️ Przewaga (a)",    code: "@sym[a]" },
+            { title: "⬇️ Zagrożenie (h)",  code: "@sym[h]" },
+            { title: "☀️ Triumf (t)",      code: "@sym[t]" },
+            { title: "💀 Rozpacz (y)",     code: "@sym[d]" }
+        ];
+        const entries = symbolData.map(item => ({
+            action: item.title,
+            title: item.title,
+            cmd: (state, dispatch, view) => insertText(view, item.code)
+        }));
+        dropdowns['genesys-symbols'] = {
+            title: "Symbole Genesys",
+            cssClass: "genesys-selector",
+            icon: '<i class="fas fa-dice" style="color:var(--color-text-light)"></i>', 
+            entries: entries
+        };
+    });
 });
 
-// =============================================================================
-// --- DYNAMICZNE BONUSY DO UMIEJĘTNOŚCI (Active Effects Handler) ---
-// =============================================================================
-
-// Funkcja przeliczająca bonusy dla aktora
+// Active Effects Logic
 async function recalculateSkillBonuses(actor) {
     if (!actor || !actor.items) return;
-    
-    // 1. Znajdź wszystkie aktywne efekty wpływające na skille
     const skillBonuses = {};
-    
-    // Pobieramy efekty bezpośrednio z aktora oraz z jego przedmiotów
-    // (W Genesys efekty są często na przedmiotach)
     actor.items.forEach(item => {
         const effects = item.effects || [];
         effects.forEach(effect => {
-            if (effect.disabled) return; // Pomiń wyłączone
-            
-            // Sprawdź czy efekt jest aktywny (niezawieszony)
-            // Niektóre systemy używają flagi isSuppressed
+            if (effect.disabled) return; 
             if (effect.isSuppressed) return;
-
             effect.changes.forEach(change => {
                 if (change.key.startsWith("skill.")) {
                     const skillName = change.key.replace("skill.", "").trim();
                     const value = parseInt(change.value) || 0;
-                    
                     if (!skillBonuses[skillName]) skillBonuses[skillName] = 0;
                     skillBonuses[skillName] += value;
                 }
             });
         });
     });
-
-    // 2. Zaktualizuj rangi umiejętności
     const updates = [];
-    
-    // Iterujemy po wszystkich skillach aktora
     actor.items.filter(i => i.type === "skill").forEach(skillItem => {
         const skillName = skillItem.name;
-        
-        // Jaki jest aktualny rank?
         const currentRank = skillItem.system.rank || 0;
-        
-        // Ile z tego to bonus (zapisany w poprzednim przebiegu)?
         const previousBonus = skillItem.getFlag("warcraft-genesys", "activeBonus") || 0;
-        
-        // Jaki powinien być nowy bonus?
         const newBonus = skillBonuses[skillName] || 0;
-        
-        // Jeśli bonus się nie zmienił, nic nie robimy
         if (previousBonus === newBonus) return;
-        
-        // Obliczamy "bazowy" rank (bez bonusów)
         const baseRank = currentRank - previousBonus;
-        
-        // Nowy rank
         const newRank = Math.max(0, baseRank + newBonus);
-        
-        console.log(`WARCRAFT MOD | Aktualizacja skilla "${skillName}": Baza ${baseRank} + Bonus ${newBonus} = ${newRank}`);
-        
         updates.push({
             _id: skillItem.id,
             "system.rank": newRank,
             "flags.warcraft-genesys.activeBonus": newBonus
         });
     });
-
     if (updates.length > 0) {
         await actor.updateEmbeddedDocuments("Item", updates);
         ui.notifications.info("Zaktualizowano bonusy umiejętności.");
     }
 }
-
-// Rejestracja Hooków do nasłuchiwania zmian
 const triggerRecalculation = (doc) => {
-    // Sprawdzamy czy dokument należy do aktora typu "character"
     const actor = doc.parent ? doc.parent : (doc.actor ? doc.actor : null);
     if (actor && actor.type === "character") {
-        // Debounce, żeby nie odpalać 10 razy przy masowym dodawaniu
         if (actor._skillRecalcTimeout) clearTimeout(actor._skillRecalcTimeout);
         actor._skillRecalcTimeout = setTimeout(() => {
             recalculateSkillBonuses(actor);
             actor._skillRecalcTimeout = null;
-        }, 200); // 200ms opóźnienia
+        }, 200); 
     }
 };
-
-// Nasłuchujemy zmian w przedmiotach (dodanie/usunięcie itemu z efektem)
 Hooks.on("createItem", triggerRecalculation);
 Hooks.on("deleteItem", triggerRecalculation);
-
-// ZMODYFIKOWANY HOOK UPDATE (OPTYMALIZACJA)
 Hooks.on("updateItem", (item, changes) => {
-    // Sprawdzamy czy to item należący do postaci
     if (!item.actor || item.actor.type !== "character") return;
-
-    // Reaguj tylko jeśli zmieniono efekty, stan wyposażenia (equipped) 
-    // lub flagi naszego modułu (np. ręczne bonusy)
-    const isRelevantChange = 
-        changes.effects !== undefined || 
-        (changes.system && changes.system.equipped !== undefined) ||
-        (changes.flags && changes.flags["warcraft-genesys"]);
-
-    if (isRelevantChange) {
-        triggerRecalculation(item);
-    }
+    const isRelevantChange = changes.effects !== undefined || (changes.system && changes.system.equipped !== undefined);
+    if (isRelevantChange) triggerRecalculation(item);
 });
-
-// =============================================================================
-// --- OBSŁUGA DRAG & DROP DLA RASY (System Native: grantedItems) ---
-// =============================================================================
-
-Hooks.on("dropItemSheetData", async (targetItem, sheet, dropData) => {
-    // 1. Działamy tylko, jeśli upuszczamy coś na Rasę (Archetype)
-    if (targetItem.type !== "archetype") return;
-
-    // 2. Pobieramy upuszczony przedmiot (musi istnieć)
-    if (!dropData.uuid) return;
-    const droppedItem = await fromUuid(dropData.uuid);
-    if (!droppedItem) return;
-
-    // 3. Sprawdzamy, czy to Zdolność lub Talent (lub Feature)
-    if (!["ability", "talent", "feature"].includes(droppedItem.type)) return;
-
-    // 4. Pobieramy aktualną listę z natywnego pola systemowego Genesys
-    // W Genesys DataModel pole to nazywa się 'grantedItems'
-    const currentItems = targetItem.system.grantedItems || [];
-    
-    // Sprawdzamy duplikaty po nazwie, żeby nie dodać tego samego dwa razy
-    if (currentItems.some(i => i.name === droppedItem.name)) {
-        return ui.notifications.warn(`Ta rasa ma już zdolność: ${droppedItem.name}`);
-    }
-
-    // 5. Przygotowujemy nową tablicę
-    // Musimy użyć .toObject(), aby zapisać surowe dane przedmiotu, a nie link do niego
-    const newItems = [...currentItems, droppedItem.toObject()];
-
-    // 6. Wykonujemy aktualizację natywnego pola w systemie
-    await targetItem.update({"system.grantedItems": newItems});
-    
-    ui.notifications.info(`Dodano ${droppedItem.name} do rasy ${targetItem.name}`);
-});
-
-// Nasłuchujemy zmian w samych efektach
 Hooks.on("createActiveEffect", triggerRecalculation);
 Hooks.on("deleteActiveEffect", triggerRecalculation);
 Hooks.on("updateActiveEffect", triggerRecalculation);
 
-// =============================================================================
-// --- WARCRAFT GENESYS: GLOBALNY FIX TOOLTIPÓW (INTERCEPTOR) ---
-// =============================================================================
-
-Hooks.once("ready", () => {
-    console.log("WARCRAFT MOD | 🛡️ Uruchamianie Globalnego Interceptora Tooltipów...");
-
-    // Mapa symboli (zgodna z Twoim CSS)
-    const SYMBOLS = {
-        "a": "ability", "p": "proficiency", "d": "difficulty", "c": "challenge",
-        "b": "boost", "s": "setback", "f": "failure", "h": "threat",
-        "t": "triumph", "r": "despair"
-    };
-
-    // Element dymka w Foundry
-    const tooltipEl = document.getElementById("tooltip");
-
-    if (!tooltipEl) {
-        console.warn("WARCRAFT MOD | ⚠️ Nie znaleziono elementu #tooltip. Fix może nie działać.");
-        return;
+Hooks.on("dropItemSheetData", async (targetItem, sheet, dropData) => {
+    if (targetItem.type !== "archetype") return;
+    if (!dropData.uuid) return;
+    const droppedItem = await fromUuid(dropData.uuid);
+    if (!droppedItem) return;
+    if (!["ability", "talent", "feature"].includes(droppedItem.type)) return;
+    const currentItems = targetItem.system.grantedItems || [];
+    if (currentItems.some(i => i.name === droppedItem.name)) {
+        return ui.notifications.warn(`Ta rasa ma już zdolność: ${droppedItem.name}`);
     }
-
-    // Funkcja czyszcząca tekst
-    const cleanContent = (originalText) => {
-        let text = originalText;
-        
-        // 1. Jeśli tekst jest pusty, nic nie rób
-        if (!text) return text;
-
-        // 2. Dekodowanie encji HTML (np. &lt;p&gt;)
-        if (text.includes("&lt;")) {
-            const txt = document.createElement("textarea");
-            txt.innerHTML = text;
-            text = txt.value;
-        }
-
-        // 3. Sprawdź czy wymaga naprawy (ma tagi P lub kody @dice/@sym)
-        if (!text.includes("<p>") && !text.includes("@dice") && !text.includes("@sym")) {
-            return null; // Zwracamy null, jeśli tekst jest OK (żeby nie pętlić)
-        }
-
-        // 4. Usuwanie <p> i </p>
-        if (text.startsWith("<p>") && text.endsWith("</p>")) {
-            text = text.slice(3, -4);
-        }
-
-        // 5. Zamiana @dice[x] na HTML
-        text = text.replace(/@(dice|sym)\[([a-zA-Z])\]/g, (match, type, code) => {
-            const key = code.toLowerCase();
-            const cssClass = SYMBOLS[key];
-            return cssClass ? `<span class='genesys-pm-icon ${cssClass}'></span>` : match;
-        });
-
-        // 6. Fix cudzysłowów (dla bezpieczeństwa HTML)
-        text = text.replace(/"/g, "'");
-
-        return text;
-    };
-
-    // OBSERWATOR ZMIAN
-    // Patrzymy, kiedy Foundry zmienia tekst w dymku
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            // Reagujemy tylko na zmianę listy dzieci (czyli zmianę tekstu w środku)
-            if (mutation.type === "childList") {
-                const currentHTML = tooltipEl.innerHTML;
-                
-                // Unikamy pętli nieskończonej: sprawdzamy, czy tekst wymaga czyszczenia
-                const cleanHTML = cleanContent(currentHTML);
-
-                if (cleanHTML && cleanHTML !== currentHTML) {
-                    // Wyłączamy obserwatora na moment zmiany, żeby nie wykrył naszej zmiany
-                    observer.disconnect();
-                    tooltipEl.innerHTML = cleanHTML;
-                    // Włączamy z powrotem
-                    observer.observe(tooltipEl, { childList: true, subtree: true });
-                }
-            }
-        });
-    });
-
-    // Start obserwacji globalnego dymka
-    observer.observe(tooltipEl, { childList: true, subtree: true });
+    const newItems = [...currentItems, droppedItem.toObject()];
+    await targetItem.update({"system.grantedItems": newItems});
+    ui.notifications.info(`Dodano ${droppedItem.name} do rasy ${targetItem.name}`);
 });

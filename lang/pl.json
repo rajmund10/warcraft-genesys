@@ -1,11 +1,10 @@
 {
-"Warcraft": {
+  "Warcraft": {
     "GENESYS.Archetype": "Rasa",
     "GENESYS.ArchetypePlural": "Rasy",
     "GENESYS.Career": "Klasa",
     "GENESYS.CareerPlural": "Klasy",
     "GENESYS.CareerSkills": "Umiejętności Klasowe",
-    
     "Editor": "Edytor Specjalizacji",
     "SpecTree": "Drzewko",
     "Locked": "Zablokowane (Tryb Gry)",
@@ -19,7 +18,6 @@
     "RefundTitle": "Zwrot Talentu",
     "RefundConfirm": "Zwrócić {name} i odzyskać {cost} PD?"
   },
-  
   "TYPES": {
     "Actor": {
       "character": "Postać",
@@ -45,7 +43,6 @@
       "specialization": "Specjalizacja"
     }
   },
-
   "Genesys": {
     "System": {
       "Name": "Genesys"
@@ -73,7 +70,6 @@
       "Duration": "Czas trwania",
       "Miscellaneous": "Różne"
     },
-    
     "Characteristics": {
       "Brawn": "Krzepa",
       "Agility": "Zwinność",
@@ -328,9 +324,6 @@
     "CombatTracker": {
       "RevokeInitiativeClaim": "Odwołaj przejęcie inicjatywy"
     },
-
-
-    "Genesys": {
     "Rolls": {
       "Results": "Wyniki Rzutu",
       "Dice": "Pula Kości",
@@ -353,3 +346,5 @@
     "Tooltips": {
       "NoDescription": "Brak dodatkowego opisu"
     }
+  }
+}
