@@ -1,0 +1,56 @@
+<div class="roll roll-skill warcraft-chat-card">
+    {{!-- 1. SEKCJA KOŚCI --}}
+    <div class="dice-row">
+        <label>{{localize 'Genesys.Rolls.Dice'}}</label>
+        <div class="dice-container">
+            {{#each results.faces as |faces die|}}
+                {{#each faces}}
+                    <div class="warcraft-die">
+                        <img src="{{getWarcraftDiceImage die this}}" title="{{capitalize die}}: {{this}}" />
+                    </div>
+                {{/each}}
+            {{/each}}
+        </div>
+    </div>
+
+    {{!-- 2. WYNIKI SYMBOLI (TERAZ CZARNE) --}}
+    <div class="results-row">
+        {{#if description}}<div class="roll-description">{{{description}}}</div>{{/if}}
+
+        <label>{{localize 'Genesys.Rolls.Results'}}</label>
+        <div class="net-results" style="display: flex; flex-wrap: wrap; gap: 2px; align-items: center; min-height: 24px;">
+            {{#repeat (sub results.netSuccess results.totalTriumph)}}
+                <img src="{{getWarcraftSymbolImage 's'}}" class="wc-symbol" title="Success" />
+            {{/repeat}}
+
+            {{#repeat (sub results.netFailure results.totalDespair)}}
+                <img src="{{getWarcraftSymbolImage 'f'}}" class="wc-symbol" title="Failure" />
+            {{/repeat}}
+
+            {{#repeat results.netAdvantage}}
+                <img src="{{getWarcraftSymbolImage 'a'}}" class="wc-symbol" title="Advantage" />
+            {{/repeat}}
+
+            {{#repeat results.netThreat}}
+                <img src="{{getWarcraftSymbolImage 'h'}}" class="wc-symbol" title="Threat" />
+            {{/repeat}}
+
+            {{#repeat results.totalTriumph}}
+                <img src="{{getWarcraftSymbolImage 't'}}" class="wc-symbol" title="Triumph" />
+            {{/repeat}}
+
+            {{#repeat results.totalDespair}}
+                <img src="{{getWarcraftSymbolImage 'd'}}" class="wc-symbol" title="Despair" />
+            {{/repeat}}
+        </div>
+
+        <div class="summary-table">
+            {{#if (gt results.netSuccess 0)}}<span class="label">Sukcesy: {{results.netSuccess}}</span><div class="separator"></div>{{/if}}
+            {{#if (gt results.netFailure 0)}}<span class="label">Porażki: {{results.netFailure}}</span><div class="separator"></div>{{/if}}
+            {{#if (gt results.netAdvantage 0)}}<span class="label">Przewagi: {{results.netAdvantage}}</span><div class="separator"></div>{{/if}}
+            {{#if (gt results.netThreat 0)}}<span class="label">Zagrożenia: {{results.netThreat}}</span><div class="separator"></div>{{/if}}
+            {{#if (gt results.totalTriumph 0)}}<span class="label">Triumfy: {{results.totalTriumph}}</span><div class="separator"></div>{{/if}}
+            {{#if (gt results.totalDespair 0)}}<span class="label">Rozpacze: {{results.totalDespair}}</span><div class="separator"></div>{{/if}}
+        </div>
+    </div>
+</div>

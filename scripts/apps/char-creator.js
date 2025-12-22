@@ -988,43 +988,66 @@ export class CharacterCreator extends FormApplication {
             }
         }
 
-        // E. UMIEJĘTNOŚCI (SKILLS)
-        for (const [skillName, rank] of Object.entries(d.skills)) {
-            let finalRank = rank;
 
-            // Sprawdzamy czy skill jest darmowy (w którejś z list bonusowych)
-            const isFreeStormwind = d.freeNonCareerList && d.freeNonCareerList.includes(skillName);
-            const isFreeStromgarde = d.freeCombatList && d.freeCombatList.includes(skillName);
-            const isFreeGnome = d.freeGnomeSkillList && d.freeGnomeSkillList.includes(skillName);
-            const isFreeFel = d.freeFelSkillList && d.freeFelSkillList.includes(skillName);
+    // E. UMIEJĘTNOŚCI (SKILLS)
+    
+    // 1. Tworzymy kopię skilli, które gracz już modyfikował
+    const skillsToProcess = { ...d.skills };
 
-            // Jeśli jest darmowy, odejmujemy 1 od bazy (bo Active Effect na Zdolności doda +1)
-            // Dzięki temu Ranga 1 = 0 (baza) + 1 (efekt), a Ranga 2 = 1 (baza) + 1 (efekt).
-            if (isFreeStormwind || isFreeStromgarde || isFreeGnome || isFreeFel) {
-                finalRank = rank - 1;
+    // 2. Dodajemy brakujące skille z Profesji (Career Skills) z rangą 0
+    // Dzięki temu trafią na kartę postaci jako "klasowe", nawet jeśli gracz w nie nie zainwestował
+    if (careerItem && careerItem.system.careerSkills) {
+        const careerSkillsList = careerItem.system.careerSkills.map(s => 
+            (typeof s === 'string' ? s : (s.name || "")).trim()
+        );
+        
+        careerSkillsList.forEach(cs => {
+            // Jeśli skill nie jest jeszcze w kolejce do przetworzenia (nie został kupiony/wybrany), dodajemy go z rangą 0
+            if (cs && skillsToProcess[cs] === undefined) {
+                skillsToProcess[cs] = 0;
             }
+        });
+    }
 
-            const existingSkill = realActor.items.find(i => i.type === "skill" && i.name === skillName);
-            const isCareer = this._isCareerSkill(skillName);
-            
-            if (existingSkill) {
-                await existingSkill.update({ "system.rank": finalRank, "system.career": isCareer }, { renderSheet: false });
+    // 3. Iterujemy po PEŁNEJ liście (zakupione + puste karierowe)
+    for (const [skillName, rank] of Object.entries(skillsToProcess)) {
+        let finalRank = rank;
+
+        // Sprawdzamy czy skill jest darmowy (w którejś z list bonusowych)
+        const isFreeStormwind = d.freeNonCareerList && d.freeNonCareerList.includes(skillName);
+        const isFreeStromgarde = d.freeCombatList && d.freeCombatList.includes(skillName);
+        const isFreeGnome = d.freeGnomeSkillList && d.freeGnomeSkillList.includes(skillName);
+        const isFreeFel = d.freeFelSkillList && d.freeFelSkillList.includes(skillName);
+
+        // Jeśli jest darmowy (z bonusu rasy/zdolności), odejmujemy 1 od bazy, 
+        // ponieważ Active Effect na przedmiocie doda ten +1 z powrotem.
+        if (isFreeStormwind || isFreeStromgarde || isFreeGnome || isFreeFel) {
+            finalRank = rank - 1;
+        }
+
+        const existingSkill = realActor.items.find(i => i.type === "skill" && i.name === skillName);
+        
+        // Tutaj funkcja _isCareerSkill zadziała poprawnie dla wszystkich skilli z listy profesji
+        const isCareer = this._isCareerSkill(skillName); 
+        
+        if (existingSkill) {
+            await existingSkill.update({ "system.rank": finalRank, "system.career": isCareer }, { renderSheet: false });
+        } else {
+            const originalSkill = this.loadedData.skills.find(s => s.name === skillName);
+            if (originalSkill) {
+                const skillData = originalSkill.toObject();
+                skillData.system.rank = finalRank;
+                skillData.system.career = isCareer;
+                itemsToCreate.push(skillData);
             } else {
-                const originalSkill = this.loadedData.skills.find(s => s.name === skillName);
-                if (originalSkill) {
-                    const skillData = originalSkill.toObject();
-                    skillData.system.rank = finalRank;
-                    skillData.system.career = isCareer;
-                    itemsToCreate.push(skillData);
-                } else {
-                    // Fallback jeśli skilla nie ma w kompendium (rzadkie)
-                    itemsToCreate.push({
-                        name: skillName, type: "skill",
-                        system: { rank: finalRank, career: isCareer }
-                    });
-                }
+                // Fallback jeśli skilla nie ma w kompendium
+                itemsToCreate.push({
+                    name: skillName, type: "skill",
+                    system: { rank: finalRank, career: isCareer }
+                });
             }
         }
+    }
 
         if (itemsToCreate.length > 0) {
             await realActor.createEmbeddedDocuments("Item", itemsToCreate, { renderSheet: false });

@@ -1,0 +1,44 @@
+<div class="roll roll-attack warcraft-chat-card">
+    <div class="dice-row">
+        <div class="dice-container">
+            {{#each results.faces as |faces die|}}
+                {{#each faces}}
+                    <div class="warcraft-die">
+                        <img src="{{getWarcraftDiceImage die this}}" title="{{capitalize die}}: {{this}}" />
+                    </div>
+                {{/each}}
+            {{/each}}
+        </div>
+    </div>
+
+    <div class="results-row" style="border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 5px;">
+        <div class="net-results">
+            {{#repeat (sub results.netSuccess results.totalTriumph)}}<span style="color:black">s</span>{{/repeat}}
+            {{#repeat (sub results.netFailure results.totalDespair)}}<span style="color:black">f</span>{{/repeat}}
+            {{#repeat results.netAdvantage}}<span style="color:black">a</span>{{/repeat}}
+            {{#repeat results.netThreat}}<span style="color:black">h</span>{{/repeat}}
+            {{#repeat results.totalTriumph}}<span style="color:black">t</span>{{/repeat}}
+            {{#repeat results.totalDespair}}<span style="color:black">d</span>{{/repeat}}
+        </div>
+    </div>
+
+    {{!-- Sekcja Obrażeń (Tutaj kolory zostawiłem, bo są czytelniejsze, ale jeśli też chcesz czarne, zmień 'darkred' na 'black') --}}
+    {{#if (or showDamageOnFailure (gt results.netSuccess 0))}}
+    <div class="wc-attack-stats flexrow">
+        <div class="wc-stat-damage">
+            <span class="wc-label">{{localize 'Genesys.Rolls.Attack.Damage'}}</span>
+            <span class="wc-value" style="color: darkred;">
+                {{#if item.system.damage}}{{add item.system.damage results.netSuccess}}{{else}}{{damage}}{{/if}}
+            </span>
+        </div>
+        <div class="wc-stat-critical">
+            <span class="wc-label">{{localize 'Genesys.Rolls.Attack.Critical'}}</span>
+            <span class="wc-value" style="color: #a48b5e;">{{item.system.critical}}</span>
+        </div>
+    </div>
+    {{/if}}
+
+    {{#if qualities}}
+        <div class="qualities">{{#each qualities}}<span class="quality" title="{{description}}">{{name}} {{#if isRated}}{{rating}}{{/if}}</span>{{#unless @last}}, {{/unless}}{{/each}}</div>
+    {{/if}}
+</div>

@@ -1442,3 +1442,122 @@
     transform: scale(1.2);
     z-index: 10;
 }
+
+.warcraft-die img {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* --- WARCRAFT CHAT CARD STYLING --- */
+
+/* Główny kontener kości */
+.dice-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center; /* Wyrównuje kości w pionie do środka */
+    justify-content: flex-start; /* Wyrównuje do lewej (zamiast center) */
+    gap: 2px;
+    padding: 2px 0;
+    margin: 0;
+}
+
+/* Pojedyncza kość (kontener obrazka) */
+.warcraft-die {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;  /* Stała szerokość */
+    height: 28px; /* Stała wysokość */
+    margin: 0;    /* Zerujemy marginesy, żeby nie uciekało w prawo */
+    padding: 0;
+    vertical-align: middle;
+}
+
+/* Sam obrazek kości */
+.warcraft-die img {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    display: block;
+    margin: 0 !important; /* Ważne! Usuwa domyślne przesunięcia */
+    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+}
+
+/* Symbole wyników (s, a, f...) */
+.net-results {
+    font-family: 'Genesys Symbols';
+    font-size: 1.5em;
+    margin: 5px 0;
+    line-height: 1;
+    color: black !important; /* Wymuszenie czerni */
+}
+
+/* Statystyki Ataku (Obrażenia/Krytyk) */
+.wc-attack-stats {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    background: rgba(0,0,0,0.05);
+    padding: 5px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.wc-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.wc-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Nagłówek Magii */
+.magic-header {
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4em;
+    color: #2b4b73;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #ccc;
+}
+
+/* Efekty Magii */
+.magic-effects {
+    background: rgba(113, 198, 255, 0.1);
+    padding: 5px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+.magic-effects label {
+    font-weight: bold;
+    display: block;
+    border-bottom: 1px dashed #aaa;
+    font-size: 0.9em;
+}
+.magic-effects ul {
+    margin: 0;
+    padding-left: 15px;
+    font-size: 0.9em;
+}
+/* Styl dla pojedynczego symbolu (s, a, f...) */
+.wc-symbol {
+    border: none !important;
+    box-shadow: none !important;
+    width: 20px; /* Nieco mniejsze niż kości */
+    height: 20px;
+    object-fit: contain;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 1px;
+    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
+}

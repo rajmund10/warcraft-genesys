@@ -1,0 +1,33 @@
+<div class="roll roll-magic warcraft-chat-card">
+    <div class="magic-header">{{spellName}}</div>
+
+    <div class="dice-row">
+        <div class="dice-container">
+            {{#each results.faces as |faces die|}}
+                {{#each faces}}
+                    <div class="warcraft-die">
+                        <img src="{{getWarcraftDiceImage die this}}" title="{{capitalize die}}: {{this}}" />
+                    </div>
+                {{/each}}
+            {{/each}}
+        </div>
+    </div>
+
+    <div class="results-row" style="border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 5px;">
+        <div class="net-results">
+            {{#repeat (sub results.netSuccess results.totalTriumph)}}<span style="color:black">s</span>{{/repeat}}
+            {{#repeat (sub results.netFailure results.totalDespair)}}<span style="color:black">f</span>{{/repeat}}
+            {{#repeat results.netAdvantage}}<span style="color:black">a</span>{{/repeat}}
+            {{#repeat results.netThreat}}<span style="color:black">h</span>{{/repeat}}
+            {{#repeat results.totalTriumph}}<span style="color:black">t</span>{{/repeat}}
+            {{#repeat results.totalDespair}}<span style="color:black">d</span>{{/repeat}}
+        </div>
+    </div>
+
+    {{#if effects}}
+    <div class="magic-effects">
+        <label>Aktywne Efekty:</label>
+        <ul>{{#each effects}}<li><strong>{{this.name}}</strong>: {{this.description}}</li>{{/each}}</ul>
+    </div>
+    {{/if}}
+</div>
