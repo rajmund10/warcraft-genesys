@@ -1561,3 +1561,98 @@
     margin: 0 1px;
     filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
 }
+
+/* --- Stylizacja wyników na czacie (Warcraft Style) --- */
+
+/* 1. KONTENER WYNIKÓW (Górna sekcja z ikonami) */
+.warcraft-chat-card .net-results {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start !important; 
+    gap: 4px; 
+    min-height: 28px; /* Dopasowane do nowej wysokości ikon */
+    margin-bottom: 8px;
+    padding-left: 2px;
+}
+
+/* Ikony w sekcji Results - EFEKT 3D/KOŚCI */
+.warcraft-chat-card .wc-symbol-icon {
+    width: 24px;   /* Zmniejszone z 32px na 24px */
+    height: 24px;
+    border: none;
+    vertical-align: middle;
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5)); /* Lekki cień */
+    transition: transform 0.2s ease;
+}
+
+.warcraft-chat-card .wc-symbol-icon:hover {
+    transform: scale(1.15);
+}
+
+/* 2. TABELA PODSUMOWANIA (Dolna sekcja) */
+.warcraft-chat-card .summary-table {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: "Signika", sans-serif;
+    font-size: 14px; /* Zwiększone z 12px na 14px */
+    margin-top: 5px;
+    
+    align-items: flex-start !important; 
+    text-align: left !important;
+    width: 100% !important;
+}
+
+/* 3. WIERSZ PODSUMOWANIA */
+.warcraft-chat-card .summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start !important; 
+    width: 100%;
+    padding: 1px 0;
+    background: transparent !important; 
+    color: inherit !important;
+}
+
+/* Teksty w podsumowaniu */
+.warcraft-chat-card .summary-row .label {
+    margin-right: 6px;
+    color: #444;       
+    font-weight: normal;
+}
+
+.warcraft-chat-card .summary-row .count {
+    font-weight: bold;
+    color: #000;
+    font-size: 15px; /* Liczba jeszcze odrobinę większa */
+}
+
+/* Ukrywamy standardowy nagłówek (flavor text), bo przenosimy go do środka karty */
+.chat-message .message-header .flavor-text {
+    display: none !important;
+}
+
+/* Styl dla naszej nowej etykiety wewnątrz karty */
+.warcraft-chat-card .skill-name-label {
+    text-transform: none; 
+    font-weight: bold; 
+    font-size: 13px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* Ukrywamy opis rzutu, w którym system Genesys umieszcza tekst "Rolling..." */
+.warcraft-chat-card .roll-description {
+    display: none !important;
+}
+
+/* Styl dla naszej nowej etykiety (Pula kości...), którą wypełnimy skryptem */
+.warcraft-chat-card .warcraft-skill-label {
+    text-transform: none; 
+    font-weight: bold; 
+    font-size: 13px;
+    display: block;
+    margin-bottom: 4px;
+    color: #000;
+}

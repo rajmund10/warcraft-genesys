@@ -1,7 +1,11 @@
 <div class="roll roll-skill warcraft-chat-card">
     {{!-- 1. SEKCJA KOŚCI --}}
     <div class="dice-row">
-        <label>{{localize 'Genesys.Rolls.Dice'}}</label>
+        {{!-- ZMIANA TUTAJ: Zamiast "Kości", wyświetlamy "Pula kości [Nazwa]" --}}
+        <label style="text-transform: none; font-weight: bold; font-size: 13px;">
+            Pula kości {{skillLabel}}
+        </label>
+        
         <div class="dice-container">
             {{#each results.faces as |faces die|}}
                 {{#each faces}}
@@ -13,44 +17,54 @@
         </div>
     </div>
 
-    {{!-- 2. WYNIKI SYMBOLI (TERAZ CZARNE) --}}
+    {{!-- 2. WYNIKI I PODSUMOWANIE (Bez zmian względem poprzedniej wersji) --}}
     <div class="results-row">
         {{#if description}}<div class="roll-description">{{{description}}}</div>{{/if}}
 
-        <label>{{localize 'Genesys.Rolls.Results'}}</label>
-        <div class="net-results" style="display: flex; flex-wrap: wrap; gap: 2px; align-items: center; min-height: 24px;">
-            {{#repeat (sub results.netSuccess results.totalTriumph)}}
-                <img src="{{getWarcraftSymbolImage 's'}}" class="wc-symbol" title="Success" />
-            {{/repeat}}
-
-            {{#repeat (sub results.netFailure results.totalDespair)}}
-                <img src="{{getWarcraftSymbolImage 'f'}}" class="wc-symbol" title="Failure" />
-            {{/repeat}}
-
-            {{#repeat results.netAdvantage}}
-                <img src="{{getWarcraftSymbolImage 'a'}}" class="wc-symbol" title="Advantage" />
-            {{/repeat}}
-
-            {{#repeat results.netThreat}}
-                <img src="{{getWarcraftSymbolImage 'h'}}" class="wc-symbol" title="Threat" />
-            {{/repeat}}
-
-            {{#repeat results.totalTriumph}}
-                <img src="{{getWarcraftSymbolImage 't'}}" class="wc-symbol" title="Triumph" />
-            {{/repeat}}
-
-            {{#repeat results.totalDespair}}
-                <img src="{{getWarcraftSymbolImage 'd'}}" class="wc-symbol" title="Despair" />
-            {{/repeat}}
+        <label style="display:block; text-align:left; margin-bottom:2px;">{{localize 'Genesys.Rolls.Results'}}</label>
+        
+        <div class="net-results">
+            {{#repeat (sub results.netSuccess results.totalTriumph)}}<img src="{{getWarcraftSymbolImage 's'}}" class="wc-symbol-icon" title="Success" />{{/repeat}}
+            {{#repeat (sub results.netFailure results.totalDespair)}}<img src="{{getWarcraftSymbolImage 'f'}}" class="wc-symbol-icon" title="Failure" />{{/repeat}}
+            {{#repeat results.netAdvantage}}<img src="{{getWarcraftSymbolImage 'a'}}" class="wc-symbol-icon" title="Advantage" />{{/repeat}}
+            {{#repeat results.netThreat}}<img src="{{getWarcraftSymbolImage 'h'}}" class="wc-symbol-icon" title="Threat" />{{/repeat}}
+            {{#repeat results.totalTriumph}}<img src="{{getWarcraftSymbolImage 't'}}" class="wc-symbol-icon" title="Triumph" />{{/repeat}}
+            {{#repeat results.totalDespair}}<img src="{{getWarcraftSymbolImage 'd'}}" class="wc-symbol-icon" title="Despair" />{{/repeat}}
         </div>
 
-        <div class="summary-table">
-            {{#if (gt results.netSuccess 0)}}<span class="label">Sukcesy: {{results.netSuccess}}</span><div class="separator"></div>{{/if}}
-            {{#if (gt results.netFailure 0)}}<span class="label">Porażki: {{results.netFailure}}</span><div class="separator"></div>{{/if}}
-            {{#if (gt results.netAdvantage 0)}}<span class="label">Przewagi: {{results.netAdvantage}}</span><div class="separator"></div>{{/if}}
-            {{#if (gt results.netThreat 0)}}<span class="label">Zagrożenia: {{results.netThreat}}</span><div class="separator"></div>{{/if}}
-            {{#if (gt results.totalTriumph 0)}}<span class="label">Triumfy: {{results.totalTriumph}}</span><div class="separator"></div>{{/if}}
-            {{#if (gt results.totalDespair 0)}}<span class="label">Rozpacze: {{results.totalDespair}}</span><div class="separator"></div>{{/if}}
-        </div>
+        {{#if (or (gt results.netSuccess 0) (or (gt results.netFailure 0) (or (gt results.netAdvantage 0) (or (gt results.netThreat 0) (or (gt results.totalTriumph 0) (gt results.totalDespair 0))))))}}
+            <div class="summary-table">
+                {{#if (gt results.netSuccess 0)}}
+                    <div class="summary-row">
+                        <span class="label">{{localize 'Genesys.Rolls.Summary.Successes'}}</span><span class="count">{{results.netSuccess}}</span>
+                    </div>
+                {{/if}}
+                {{#if (gt results.netFailure 0)}}
+                    <div class="summary-row">
+                        <span class="label">{{localize 'Genesys.Rolls.Summary.Failures'}}</span><span class="count">{{results.netFailure}}</span>
+                    </div>
+                {{/if}}
+                {{#if (gt results.netAdvantage 0)}}
+                    <div class="summary-row">
+                        <span class="label">{{localize 'Genesys.Rolls.Summary.Advantage'}}</span><span class="count">{{results.netAdvantage}}</span>
+                    </div>
+                {{/if}}
+                {{#if (gt results.netThreat 0)}}
+                    <div class="summary-row">
+                        <span class="label">{{localize 'Genesys.Rolls.Summary.Threat'}}</span><span class="count">{{results.netThreat}}</span>
+                    </div>
+                {{/if}}
+                {{#if (gt results.totalTriumph 0)}}
+                    <div class="summary-row">
+                        <span class="label">{{localize 'Genesys.Rolls.Summary.Triumph'}}</span><span class="count">{{results.totalTriumph}}</span>
+                    </div>
+                {{/if}}
+                {{#if (gt results.totalDespair 0)}}
+                    <div class="summary-row">
+                        <span class="label">{{localize 'Genesys.Rolls.Summary.Despair'}}</span><span class="count">{{results.totalDespair}}</span>
+                    </div>
+                {{/if}}
+            </div>
+        {{/if}}
     </div>
 </div>
